@@ -16,7 +16,7 @@
     }
 */
 let hand = [];
-let jokers = [allJokers.testPair];
+let jokers = [allJokers.midasMask];
 
 // card constructor function
 function Card(rank, suit) {
@@ -63,6 +63,7 @@ function getHandType(playedHand) {
             }
     
             let count = 0;
+            let breakIt = false;
             for (j=i;j<playedHand.length;j++) {
                 if (playedHand[i-1].rank === playedHand[j].rank) {
                     count++;
@@ -72,7 +73,15 @@ function getHandType(playedHand) {
                     pairSeen = true;
                 } else if (j === playedHand.length - 1 && count === 2) {
                     toakSeen = true;
+                } else if (j === playedHand.length - 1 && count === 3) {
+                    pairSeen = false;
+                    toakSeen = false;
+                    breakIt = true;
                 }
+            }
+
+            if (breakIt) {
+                break;
             }
         }
         if (toakSeen && pairSeen) {
@@ -124,6 +133,9 @@ function getHandType(playedHand) {
     // these hands need five cards to be played
     if (playedHand.length === 5) {
         // check for full house
+        // toak stands for three of a kind
+        let pairSeen = false;
+        let toakSeen = false;
         for (i=0;i<playedHand.length;i++) {
             let count = 0;
             for (j=i+1;j<playedHand.length;j++) {
@@ -194,21 +206,84 @@ function getHandType(playedHand) {
     return 'high card';
 }
 
+// count up chips and apply scoring joker effects
 function scoreHand(playedHand) {
+    // get the hand's score from the score library
     let currentScore = handVars[getHandType(playedHand)];
-    for (let card of playedHand) {
-        currentScore.chips += card.rank;
-    }
+
+    // check if any jokers trigger before score
     for (let joker of jokers) {
-        if (joker.trigger === 'afterCards') {
-            if (joker.needs.includes('hand')) {
-                joker.effect(currentScore, playedHand);
-            } else {
-                joker.effect(currentScore);
+        if (joker.trigger === 'beforeScore') {
+            if ('needs' in joker && joker.needs.includes('hand')) {
+                if ('condition' in joker) {
+                    if (joker.condition(playedHand)) {
+                        console.log('triggered')
+                        joker.effect(currentScore, hand);
+                    }
+                }
             }
         }
     }
+
+    // loop over every card
+    for (let card of playedHand) {
+        // add that cards rank to the chips
+        currentScore.chips += card.rank;
+
+        // check if any jokers trigger during card scoring
+        for (let joker of jokers) {
+            if (joker.trigger === 'duringScore') {
+                // if so, check if the joker needs the current card
+                if ('needs' in joker && joker.needs.includes('card')) {
+                    // if the joker has a condition that needs to be met, check it with the card
+                    if ('condition' in joker) {
+                        // the condition is inside this if statement so that the else statement isn't triggered when the condition is false
+                        if (joker.condition(card)) {
+                            joker.effect(currentScore, card);
+                        }
+                    } else {
+                        joker.effect(currentScore, card);
+                    }
+                } else {
+                    // if the joker has a condition that needs to be met, check it
+                    if ('condition' in joker) {
+                        if (joker.condition()) {
+                            joker.effect(currentScore);
+                        }
+                    } else {
+                        joker.effect(currentScore);
+                    }
+                }
+            }
+        }
+    }
+
+    // check if any of the jokers trigger after card scoring
+    for (let joker of jokers) {
+        if (joker.trigger === 'afterScore') {
+            // if the joker needs the hand, give it to them
+            if ('needs' in joker && joker.needs.includes('hand')) {
+                if ('condition' in joker) {
+                    if (joker.condition(playedHand)) {
+                        joker.effect(currentScore, playedHand);
+                    }
+                } else {
+                    joker.effect(currentScore, playedHand);
+                }
+            } else {
+                if ('condition' in joker) {
+                    if (joker.condition()) {
+                        joker.effect(currentScore);
+                    }
+                } else {
+                    joker.effect(currentScore);
+                }
+            }
+        }
+    }
+
+    // log chips, mult, and score to the console
     console.log(`Chips: ${currentScore.chips}\nMult: ${currentScore.mult}\nScore: ${currentScore.chips * currentScore.mult}`);
 }
 
-scoreHand([new Card(8, 'spades'), new Card(8, 'spades'), new Card(8, 'spades'), new Card(8, 'spades'), new Card(8, 'spades')]);
+scoreHand([new Card(12, 'hearts')]);

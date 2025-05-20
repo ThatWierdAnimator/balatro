@@ -53,19 +53,52 @@ var handVars = {
     }
 }
 
+
+/* 
+    Joker Triggers:
+
+    afterScore - Triggered after all cards are scored in a hand
+    duringScore - Triggered when each card is scored, if it has a condition attribute the condition is checks
+    beforeScore - Triggered just before all cards are scored
+*/
 var allJokers = {
     'test': {
         name: 'test',
-        trigger: 'afterCards',
-        effect: (currentScore) => {currentScore.mult += 4}
+        trigger: 'afterScore',
+        effect: (currentScore) => currentScore.mult += 4
     },
     'testPair': {
         name: 'testPair',
-        trigger: 'afterCards',
+        trigger: 'afterScore',
         needs: ['hand'],
         effect: (currentScore, hand) => {
-            if (getHandType(hand) === 'pair') {
-                currentScore.mult += 8
+            for (i=0;i<hand.length;i++) {
+                for (j=i+1;j<hand.length;j++) {
+                    if (hand[i].rank === hand[j].rank) {
+                        currentScore.mult += 8;
+                        break;
+                    }
+                }
+            }
+        }
+    },
+    'bloodStone': {
+        name: 'Bloodstone',
+        trigger: 'duringScore',
+        needs: ['card'],
+        condition: (card) => card.suit === 'hearts' && Math.floor(Math.random() * 2) === 0,
+        effect: (currentScore) => currentScore.mult *= 1.5
+    },
+    'midasMask': {
+        name: 'Midas Mask',
+        trigger: 'beforeScore',
+        needs: ['hand'],
+        // the condition is a face card
+        condition: (hand) => hand.map((card) => card.rank <= 13 && card.rank >= 11).includes(true),
+        effect: (currentScore, hand) => {
+            for (card of hand) {
+                card.enhancement = 'gold';
+                console.log(card);
             }
         }
     }
