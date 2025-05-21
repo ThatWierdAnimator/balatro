@@ -18,16 +18,21 @@
 var gameVars = {
     maxJokers: 5,
     maxHands: 4,
-    maxDiscards: 3
+    maxDiscards: 3,
+    currentHands: 4,
+    currentDiscards: 3,
+    money: 4
 }
 
 let hand = [];
-var jokers = [allJokers['rideTheBus']];
+var jokers = [allJokers.hack];
 
 // card constructor function
 function Card(rank, suit) {
     this.rank = rank;
     this.suit = suit;
+    this.id = cardsSpawned;
+    cardsSpawned++;
 }
 
 // returns the hand type as a string
@@ -268,18 +273,14 @@ function scoreHand(localHand) {
 
     // loop over every card
     for (card of playedHand) {
-        // add that cards rank to the chips
+        // if the card is stone it always scores
+        if (card.enhancement === 'stone') {
+            card.scoring = true;
+        }
+
+        // if the card scores, handle the card
         if (card.scoring) {
-            currentScore.chips += card.rank;
-
-            // check if any jokers trigger during card scoring
-            for (let joker of jokers) {
-                if (joker.trigger === 'duringScore') {
-                    handleJoker(joker);
-                }
-            }
-
-            card.scoring = false;
+            handleCard(card);
         }
     }
 
@@ -306,6 +307,81 @@ function handleJoker(joker) {
     }
 }
 
-scoreHand([new Card(14, 'hearts'), new Card(6, 'hearts'), new Card(4, 'hearts'), new Card(10, 'hearts'), new Card(8, 'hearts')]);
-scoreHand([new Card(14, 'hearts'), new Card(6, 'hearts'), new Card(4, 'hearts'), new Card(10, 'hearts'), new Card(8, 'hearts')]);
-scoreHand([new Card(14, 'hearts'), new Card(6, 'hearts'), new Card(4, 'hearts'), new Card(10, 'hearts'), new Card(8, 'hearts')]);
+let smthCount = 0;
+// handles cards, applies edition and enhancements
+function handleCard(card, retrigger) {
+    // tell other scripts a retrigger is going on
+    if (gameVars.retrigger === undefined) {
+        gameVars.retrigger = false;
+    } else {
+        gameVars.retrigger = retrigger;
+    }
+    
+    // handle all enhancements
+    if ('enhancement' in card) {
+        if (card.enhancement === 'mult') {
+            currentScore.mult += 4;
+        } else if (card.enhancement === 'bonus') {
+            currentScore.chips += 30;
+        } else if (card.enhancement === 'stone') {
+            currentScore.chips += 50;
+        } else if (card.enhancement === 'lucky') {
+            if (Math.floor(Math.random() * 5) === 0) {
+                currentScore.mult += 20;
+            }
+
+            if (Math.floor(Math.random() * 20) === 0) {
+                gameVars.money += 20;
+            }
+        } else if (card.enhancement === 'glass') {
+            currentScore.mult *= 2;
+
+            if (Math.floor(Math.random() * 4) === 0) {
+                deck.splice(getCardIndex(card.id), 1);
+            }
+        }
+    }
+
+    // handle all editions
+    if ('edition' in card) {
+        if (card.edition === 'foil') {
+            currentScore.chips += 50;
+        } else if (card.edition === 'holographic') {
+            currentScore.mult += 10;
+        } else if (card.edition === 'polychrome') {
+            currentScore.mult *= 1.5;
+        }
+    }
+
+    // if the card isn't a stone card, add the rank to chips
+    // we check if the card is enhanced first so the code doesn't break trying to check for a null enhancement
+    if (!('enhancement' in card) || card.enhancement !== 'stone') {
+        currentScore.chips += card.rank;
+    }
+
+    // check if any jokers trigger during card scoring
+    for (let joker of jokers) {
+        if (joker.trigger === 'duringScore') {
+            handleJoker(joker);
+        }
+    }
+
+    // handle all seals
+    if ('seal' in card) {
+        if (card.seal === 'gold') {
+            gameVars.money += 3;
+        } else if (card.seal === 'red' && !retrigger) {
+            handleCard(card, true);
+        }
+    }
+
+    // reset the card
+    card.scoring = false;
+}
+
+// returns the card's index by it's id
+function getCardIndex(id) {
+    return deck.findIndex(card => card.id === id);
+}
+
+scoreHand([deck[getCardIndex(52)]]);

@@ -398,11 +398,10 @@ var allJokers = {
         effect: () => currentScore.mult += jokers.length * 3
     },
     'hack': {
-        // come back here to account for card enhancements
         name: 'Hack',
         trigger: 'duringScore',
-        condition: () => card.rank <= 5 && card.rank >= 2,
-        effect: () => currentScore.chips += card.rank
+        condition: () => card.rank <= 5 && card.rank >= 2 && !gameVars.retrigger,
+        effect: () => handleCard(card, true)
     },
     'evenSteven': {
         name: 'Even Steven',
@@ -458,10 +457,13 @@ var allJokers = {
     }
 }
 
+var cardsSpawned = 0;
 // card constructor function
 function Card(rank, suit) {
     this.rank = rank;
     this.suit = suit;
+    this.id = cardsSpawned;
+    cardsSpawned++;
 }
 
 // defines a standard deck
@@ -517,5 +519,12 @@ var deck = [
     new Card(11, 'diamonds'),
     new Card(12, 'diamonds'),
     new Card(13, 'diamonds'),
-    new Card(14, 'diamonds')
+    new Card(14, 'diamonds'),
+    {
+        rank: 5,
+        suit: 'balls',
+        seal: 'gold',
+        enhancement: 'mult',
+        id: 52
+    }
 ]
