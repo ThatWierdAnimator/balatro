@@ -15,8 +15,14 @@
         edition: 'polychrome'
     }
 */
+var gameVars = {
+    maxJokers: 5,
+    maxHands: 4,
+    maxDiscards: 3
+}
+
 let hand = [];
-let jokers = [allJokers.midasMask];
+var jokers = [allJokers['rideTheBus']];
 
 // card constructor function
 function Card(rank, suit) {
@@ -72,7 +78,7 @@ function getHandType(playedHand) {
                     if (playedHand[i - 1].rank === playedHand[j].rank) {
                         count++;
                     }
-    
+
                     if (j === playedHand.length - 1 && count === 1) {
                         pairSeen = true;
                         seenRanks.push(playedHand[i].rank);
@@ -135,7 +141,6 @@ function getHandType(playedHand) {
             }
 
             if (j === playedHand.length - 1 && count === 3) {
-                console.log('four of a kind');
                 return 'four of a kind';
             }
         }
@@ -148,14 +153,14 @@ function getHandType(playedHand) {
         let pairSeen = false;
         let toakSeen = false;
         let seenRanks = [];
-        for (i = 0; i < playedHand.length; i++) {
+        for (i = 1; i < playedHand.length; i++) {
             if (!seenRanks.includes(playedHand[i].rank)) {
                 let count = 0;
                 for (j = i; j < playedHand.length; j++) {
                     if (playedHand[i - 1].rank === playedHand[j].rank) {
                         count++;
                     }
-    
+
                     if (j === playedHand.length - 1 && count === 1) {
                         pairSeen = true;
                         seenRanks.push(playedHand[i].rank);
@@ -251,7 +256,7 @@ function scoreHand(localHand) {
     // global variables so jokers can access them
     playedHand = localHand;
     // get the hand's score from the score library
-    currentScore = handVars[getHandType(playedHand)];
+    currentScore = { ...handVars[getHandType(playedHand)] };
     console.log(getHandType(playedHand));
 
     // check if any jokers trigger before score
@@ -286,7 +291,7 @@ function scoreHand(localHand) {
     }
 
     // log chips, mult, and score to the console
-    console.log(`Chips: ${currentScore.chips}\nMult: ${currentScore.mult}\nScore: ${currentScore.chips * currentScore.mult}`);
+    console.log(`Chips: ${currentScore.chips}\nMult: ${currentScore.mult}\nScore: ${Math.round(currentScore.chips * currentScore.mult)}`);
 }
 
 // handles the joker, checks for condition and applies effect
@@ -301,4 +306,6 @@ function handleJoker(joker) {
     }
 }
 
-scoreHand([new Card(7, 'hearts'), new Card(7, 'clubs'), new Card(9, 'clubs'), new Card(7, 'clubs'), new Card(9, 'clubs')]);
+scoreHand([new Card(14, 'hearts'), new Card(6, 'hearts'), new Card(4, 'hearts'), new Card(10, 'hearts'), new Card(8, 'hearts')]);
+scoreHand([new Card(14, 'hearts'), new Card(6, 'hearts'), new Card(4, 'hearts'), new Card(10, 'hearts'), new Card(8, 'hearts')]);
+scoreHand([new Card(14, 'hearts'), new Card(6, 'hearts'), new Card(4, 'hearts'), new Card(10, 'hearts'), new Card(8, 'hearts')]);
