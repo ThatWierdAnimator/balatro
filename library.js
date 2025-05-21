@@ -65,17 +65,10 @@ var handVars = {
     Mime
     Credit Card
     Ceremonial Dagger
-    Banner
-    Mystic Summit
     Marble Joker
-    Dusk
     Raised Fist
     Choas the Clown
-    Scary Face
     Delayed Gratification
-    Pareidolia
-    Gros Michel
-    Buisness Card
     Supernova
     Space Joker
     Egg
@@ -85,7 +78,7 @@ var handVars = {
     Unfinished Jokers:
     8 Ball
 
-    Current Joker - Runner, Page 4/10
+    Current Joker - Ice Cream
 */
 var allJokers = {
     'joker': {
@@ -328,6 +321,17 @@ var allJokers = {
             currentScore.mult *= count;
         }
     },
+    'banner': {
+        name: 'Banner',
+        trigger: 'afterScore',
+        effect: () => currentScore.chips += gameVars.currentDiscards * 30
+    },
+    'mysticSummit': {
+        name: 'Mystic Summit',
+        trigger: 'afterScore',
+        condition: () => gameVars.currentDiscards === 0,
+        effect: () => currentScore.mult += 15
+    },
     'loyaltyCard': {
         name: 'Loyalty Card',
         trigger: 'afterScore',
@@ -348,13 +352,20 @@ var allJokers = {
         trigger: 'duringScore',
         condition: () => card.rank === 8 && Math.floor(Math.random() * 4) === 0,
         effect: () => {
-            console.log('Tarot generated!')
+            console.log('Tarot generated!');
         }
     },
     'misprint': {
         name: 'Misprint',
         trigger: 'afterScore',
         effect: () => currentScore.mult += Math.floor(Math.random() * 24)
+    },
+    'dusk': {
+        name: 'Dusk',
+        trigger: 'duringScore',
+        retriggering: true,
+        condition: () => gameVars.currentHands === 0 && !gameVars.retrigger,
+        effect: () => handleCard(card, true)
     },
     'fibonacci': {
         name: 'Fibonacci',
@@ -392,6 +403,12 @@ var allJokers = {
             currentScore.mult *= multMultiplier;
         }
     },
+    'scaryFace': {
+        name: 'Scary Face',
+        trigger: 'duringScore',
+        condition: () => jokers.includes(allJokers.pareidolia) || (card.rank <= 13 && card.rank >= 11),
+        effect: () => currentScore.chips += 30
+    },
     'abstractJoker': {
         name: 'Abstract Joker',
         trigger: 'afterScore',
@@ -400,8 +417,25 @@ var allJokers = {
     'hack': {
         name: 'Hack',
         trigger: 'duringScore',
-        condition: () => card.rank <= 5 && card.rank >= 2 && !gameVars.retrigger,
+        retriggering: true,
+        condition: () => card.rank <= 5 && card.rank >= 2 && !gameVars.retrigger && card.enhancement !== 'stone',
         effect: () => handleCard(card, true)
+    },
+    'pareidolia': {
+        name: 'Pareidolia'
+    },
+    'grosMichel': {
+        name: 'Gros Michel',
+        trigger: 'afterScore',
+        effect: () => {
+            currentScore.mult += 15;
+
+            if (Math.floor(Math.random() * 6) === 0) {
+                jokers.splice(this.index, 1);
+                gameVars.michelDestroyed = true;
+            }
+        },
+        index: 0
     },
     'evenSteven': {
         name: 'Even Steven',
@@ -423,6 +457,12 @@ var allJokers = {
             currentScore.chips += 20;
             currentScore.mult += 4;
         }
+    },
+    'businessCard': {
+        name: 'Business Card',
+        trigger: 'duringScore',
+        condition: () => (jokers.includes(allJokers.pareidolia) || (card.rank <= 13 && card.rank >= 11)) && Math.floor(Math.random() * 2) === 0,
+        effect: () => gameVars.money += 2
     },
     'rideTheBus': {
         name: 'Ride the Bus',
@@ -448,6 +488,20 @@ var allJokers = {
             }
         },
         effect: () => currentScore.mult += gameVars.rideTheBusMult
+    },
+    'runner': {
+        name: 'Runner',
+        trigger: 'afterScore',
+        condition: () => getHandType(playedHand) === 'straight' || getHandType(playedHand) === 'straight flush',
+        effect: () => {
+            if (!('runnerChips' in gameVars)) {
+                gameVars.runnerChips = 0;
+            }
+
+            gameVars.runnerChips += 15;
+
+            currentScore.chips += gameVars.runnerChips;
+        }
     },
     'bloodStone': {
         name: 'Bloodstone',
@@ -521,10 +575,8 @@ var deck = [
     new Card(13, 'diamonds'),
     new Card(14, 'diamonds'),
     {
-        rank: 5,
+        rank: 15,
         suit: 'balls',
-        seal: 'gold',
-        enhancement: 'mult',
         id: 52
     }
 ]

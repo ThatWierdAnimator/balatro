@@ -25,7 +25,7 @@ var gameVars = {
 }
 
 let hand = [];
-var jokers = [allJokers.hack];
+var jokers = [allJokers.runner];
 
 // card constructor function
 function Card(rank, suit) {
@@ -307,7 +307,6 @@ function handleJoker(joker) {
     }
 }
 
-let smthCount = 0;
 // handles cards, applies edition and enhancements
 function handleCard(card, retrigger) {
     // tell other scripts a retrigger is going on
@@ -316,7 +315,7 @@ function handleCard(card, retrigger) {
     } else {
         gameVars.retrigger = retrigger;
     }
-    
+
     // handle all enhancements
     if ('enhancement' in card) {
         if (card.enhancement === 'mult') {
@@ -362,7 +361,12 @@ function handleCard(card, retrigger) {
     // check if any jokers trigger during card scoring
     for (let joker of jokers) {
         if (joker.trigger === 'duringScore') {
-            handleJoker(joker);
+            if (joker.retriggering && !gameVars.retrigger) {
+                handleJoker(joker);
+                gameVars.retrigger = false;
+            } else {
+                handleJoker(joker);
+            }
         }
     }
 
@@ -384,4 +388,6 @@ function getCardIndex(id) {
     return deck.findIndex(card => card.id === id);
 }
 
-scoreHand([deck[getCardIndex(52)]]);
+scoreHand([new Card(1, 'hearts'), new Card(2, 'hearts'), new Card(3, 'clubs'), new Card(4, 'hearts'), new Card(5, 'hearts')]);
+scoreHand([new Card(1, 'hearts'), new Card(2, 'hearts'), new Card(3, 'clubs'), new Card(4, 'hearts'), new Card(5, 'hearts')]);
+scoreHand([new Card(1, 'hearts'), new Card(2, 'hearts'), new Card(3, 'hearts'), new Card(4, 'hearts'), new Card(5, 'hearts')]);
