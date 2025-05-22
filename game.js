@@ -19,13 +19,14 @@ var gameVars = {
     maxJokers: 5,
     maxHands: 4,
     maxDiscards: 3,
-    currentHands: 4,
+    currentHands: 3,
     currentDiscards: 3,
-    money: 4
+    money: 4,
+    playedHands: {}
 }
 
 let hand = [];
-var jokers = [allJokers.vampire];
+var jokers = [allJokers.bull];
 
 // card constructor function
 function Card(rank, suit) {
@@ -274,6 +275,16 @@ function scoreHand(localHand) {
     playedHand = localHand;
     // get the hand's score from the score library
     currentScore = { ...handVars[getHandType(playedHand)] };
+    console.log(getHandType(playedHand));
+
+    // log the played hand to gameVars
+    if (!(getHandType(playedHand) in gameVars.playedHands)) {
+        gameVars.playedHands[getHandType(playedHand)] = 0;
+    }
+    gameVars.playedHands[getHandType(playedHand)]++;
+
+    // sets gameVars.mostPlayedHand to the key that's value is equal to the highest number of hands played
+    gameVars.mostPlayedHand = Object.keys(gameVars.playedHands).find(key => gameVars.playedHands[key] === Math.max(...Object.values(gameVars.playedHands)));
 
     // check if any jokers trigger before score
     for (let joker of jokers) {
@@ -286,18 +297,21 @@ function scoreHand(localHand) {
         if (card.enhancement === 'stone') {
             card.scoring = true;
         }
-
+        
         // if the card scores, handle the card
         if (card.scoring) {
             handleCard(card);
         }
+        
+        // if it works it works ¯\_(ツ)_/¯
+        delete gameVars.retrigger;
     }
-
+    
     // check if any of the jokers trigger after card scoring
     for (let joker of jokers) {
         handleJoker(joker, 'afterScore');
     }
-
+    
     // log chips, mult, and score to the console
     console.log(`Chips: ${currentScore.chips}\nMult: ${Number(currentScore.mult.toFixed(2))}\nScore: ${Math.round(currentScore.chips * currentScore.mult)}`);
 }
@@ -314,7 +328,7 @@ function handleJoker(joker, trigger) {
             joker.effect();
         }
     }
-
+    
     if (joker.modifyTrigger === trigger) {
         if ('modifyCondition' in joker) {
             if ('modifyCondition' in joker) {
@@ -336,7 +350,7 @@ function handleCard(card, retrigger) {
     } else {
         gameVars.retrigger = retrigger;
     }
-
+    
     // handle all enhancements
     if ('enhancement' in card) {
         if (card.enhancement === 'mult') {
@@ -348,20 +362,32 @@ function handleCard(card, retrigger) {
         } else if (card.enhancement === 'lucky') {
             if (Math.floor(Math.random() * 5) === 0) {
                 currentScore.mult += 20;
-            }
 
+                if (!('luckyHits') in gameVars || gameVars.luckyHits === undefined) {
+                    gameVars.luckyHits = 0;
+                }
+                
+                gameVars.luckyHits++;
+            }
+            
             if (Math.floor(Math.random() * 20) === 0) {
                 gameVars.money += 20;
+                
+                if (!('luckyHits') in gameVars || gameVars.luckyHits === undefined) {
+                    gameVars.luckyHits = 0;
+                }
+
+                gameVars.luckyHits++;
             }
         } else if (card.enhancement === 'glass') {
             currentScore.mult *= 2;
-
+            
             if (Math.floor(Math.random() * 4) === 0) {
                 deck.splice(getCardIndex(card.id), 1);
             }
         }
     }
-
+    
     // handle all editions
     if ('edition' in card) {
         if (card.edition === 'foil') {
@@ -372,17 +398,17 @@ function handleCard(card, retrigger) {
             currentScore.mult *= 1.5;
         }
     }
-
+    
     // if the card isn't a stone card, add the rank to chips
     // we check if the card is enhanced first so the code doesn't break trying to check for a null enhancement
     if (!('enhancement' in card) || card.enhancement !== 'stone') {
         currentScore.chips += card.rank;
-
+        
         if ('bonusChips' in card) {
             currentScore.chips += card.bonusChips;
         }
     }
-
+    
     // check if any jokers trigger during card scoring
     for (let joker of jokers) {
         if (joker.trigger === 'duringScore') {
@@ -394,7 +420,7 @@ function handleCard(card, retrigger) {
             }
         }
     }
-
+    
     // handle all seals
     if ('seal' in card) {
         if (card.seal === 'gold') {
@@ -403,7 +429,7 @@ function handleCard(card, retrigger) {
             handleCard(card, true);
         }
     }
-
+    
     // reset the card
     card.scoring = false;
 }

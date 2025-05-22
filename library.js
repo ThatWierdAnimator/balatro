@@ -88,14 +88,30 @@ var handVars = {
     Riff Raff
     Shortcut
     Hologram
+    Baron
+    Cloud 9
+    Rocket
+    Luchador
+    Gift Card
+    Turtle Bean
+    Reserved Parking
+    Mail-In Rebate
+    To the Moon
+    Hallucination
+    Fortune Teller
+    Juggler
+    Drunkard
+    Golden Joker
+    Baseball Card
 
     Unfinished Jokers:
     8 Ball
+    Gros Michel
     Superposition
     Séance
     Vagabond
 
-    Current Joker - Ice Cream
+    Current Joker - Diet Cola
 */
 var allJokers = {
     'joker': {
@@ -616,6 +632,85 @@ var allJokers = {
         condition: () => gameVars.money <= 4,
         effect: () => console.log('Tarot generated!')
     },
+    'obelisk': {
+        name: 'Obelisk',
+        trigger: 'afterScore',
+        condition: () => 'obeliskMult' in gameVars && gameVars.obeliskMult > 1,
+        effect: () => currentScore.mult *= gameVars.obeliskMult,
+        modifyTrigger: 'beforeScore',
+        modifyCondition: () => {
+            if (!('obeliskMult' in gameVars)) {
+                gameVars.obeliskMult = 1;
+            }
+
+            if (getHandType(playedHand) === gameVars.mostPlayedHand) {
+                gameVars.obeliskMult = 1;
+            } else {
+                return true;
+            }
+        },
+        modifyEffect: () => gameVars.obeliskMult += 0.2
+    },
+    'midasMask': {
+        name: 'Midas Mask',
+        trigger: 'beforeScore',
+        condition: () => jokers.includes(allJokers.pareidolia) || playedHand.find(c => c.rank >= 11 && c.rank <= 13) !== undefined,
+        effect: () => {
+            for (card of playedHand) {
+                if (jokers.includes(allJokers.pareidolia) || (card.rank >= 11 && card.rank <= 13)) {
+                    card.enhancement = 'gold';
+                }
+            }
+        }
+    },
+    'photograph': {
+        name: 'Photograph',
+        trigger: 'duringScore',
+        condition: () => {
+            if (!('firstPlayedFace' in gameVars)) {
+                gameVars.firstPlayedFace = true;
+            }
+
+            if (card === playedHand[gameVars.firstPlayedFaceCardPos + 1]) {
+                gameVars.firstPlayedFace = false;
+            }
+
+            if ((jokers.includes(allJokers.pareidolia) || (card.rank <= 13 && card.rank >= 11)) && gameVars.firstPlayedFace) {
+                gameVars.firstPlayedFaceCardPos = playedHand.findIndex(c => c === card);
+                return true;
+            }
+        },
+        effect: () => currentScore.mult *= 2,
+        modifyTrigger: 'afterScore',
+        modifyEffect: () => {
+            delete gameVars.firstPlayedFace;
+            delete gameVars.firstPlayedFaceCardPos;
+        }
+    },
+    'erosion': {
+        name: 'Erosion',
+        trigger: 'afterScore',
+        condition: () => deck.length < 52,
+        effect: () => currentScore.mult += (52 - deck.length) * 4
+    },
+    'stoneJoker': {
+        name: 'Stone Joker',
+        trigger: 'afterScore',
+        condition: () => deck.find(c => c.enhancement === 'stone') !== undefined,
+        effect: () => currentScore.chips += deck.filter(c => c.enhancement === 'stone').length * 25
+    },
+    'luckyCat': {
+        name: 'Lucky Cat',
+        trigger: 'afterScore',
+        condition: () => 'luckyHits' in gameVars && gameVars.luckyHits > 0,
+        effect: () => currentScore.mult *= gameVars.luckyHits * 0.25 + 1
+    },
+    'bull': {
+        name: 'Bull',
+        trigger: 'afterScore',
+        condition: () => gameVars.money > 0,
+        effect: () => currentScore.chips += gameVars.money * 2
+    },
     'bloodStone': {
         name: 'Bloodstone',
         trigger: 'duringScore',
@@ -688,7 +783,7 @@ var deck = [
     new Card(13, 'diamonds'),
     new Card(14, 'diamonds'),
     {
-        rank: 15,
+        rank: 12,
         suit: 'balls',
         id: 52
     }
