@@ -25,7 +25,7 @@ var gameVars = {
 }
 
 let hand = [];
-var jokers = [allJokers.runner];
+var jokers = [allJokers.vampire];
 
 // card constructor function
 function Card(rank, suit) {
@@ -117,7 +117,13 @@ function getHandType(playedHand) {
 
         // check for straight flush
         for (i = 1; i < playedHand.length; i++) {
-            if (playedHand[i].suit !== playedHand[i - 1].suit || playedHand[i].rank !== playedHand[i - 1].rank + 1) {
+            if (i === playedHand.length - 1 && playedHand[i].suit === playedHand[i - 1].suit && playedHand[i].rank === 14 && playedHand[i - 1].rank === 5) {
+                // every card scores in a straight flush
+                for (card of playedHand) {
+                    card.scoring = true;
+                }
+                return 'straight flush';
+            } else if (playedHand[i].suit !== playedHand[i - 1].suit || playedHand[i].rank !== playedHand[i - 1].rank + 1) {
                 break;
             } else if (i === playedHand.length - 1 && playedHand[playedHand.length - 1].rank === 14) {
                 // if the highest card is an ace the hand is a royale flush
@@ -125,7 +131,7 @@ function getHandType(playedHand) {
                 for (card of playedHand) {
                     card.scoring = true;
                 }
-                return 'royale flush'
+                return 'royal flush'
             } else if (i === playedHand.length - 1) {
                 // every card scores in a straight flush
                 for (card of playedHand) {
@@ -199,7 +205,13 @@ function getHandType(playedHand) {
 
         // check for straight
         for (i = 1; i < playedHand.length; i++) {
-            if (playedHand[i].rank !== playedHand[i - 1].rank + 1) {
+            if (i === playedHand.length - 1 && playedHand[i].rank === 14 && playedHand[i - 1].rank === 5) {
+                // every card scores in a straight
+                for (card of playedHand) {
+                    card.scoring = true;
+                }
+                return 'flush';
+            } else if (playedHand[i].rank !== playedHand[i - 1].rank + 1) {
                 break;
             } else if (i === playedHand.length - 1) {
                 // every card scores in a straight
@@ -262,13 +274,10 @@ function scoreHand(localHand) {
     playedHand = localHand;
     // get the hand's score from the score library
     currentScore = { ...handVars[getHandType(playedHand)] };
-    console.log(getHandType(playedHand));
 
     // check if any jokers trigger before score
     for (let joker of jokers) {
-        if (joker.trigger === 'beforeScore') {
-            handleJoker(joker);
-        }
+        handleJoker(joker, 'beforeScore');
     }
 
     // loop over every card
@@ -286,24 +295,36 @@ function scoreHand(localHand) {
 
     // check if any of the jokers trigger after card scoring
     for (let joker of jokers) {
-        if (joker.trigger === 'afterScore') {
-            handleJoker(joker);
-        }
+        handleJoker(joker, 'afterScore');
     }
 
     // log chips, mult, and score to the console
-    console.log(`Chips: ${currentScore.chips}\nMult: ${currentScore.mult}\nScore: ${Math.round(currentScore.chips * currentScore.mult)}`);
+    console.log(`Chips: ${currentScore.chips}\nMult: ${Number(currentScore.mult.toFixed(2))}\nScore: ${Math.round(currentScore.chips * currentScore.mult)}`);
 }
 
 // handles the joker, checks for condition and applies effect
-function handleJoker(joker) {
-    // the condition statement is inside this if statement so we don't trigger the else statement if the condition isn't met
-    if ('condition' in joker) {
-        if (joker.condition()) {
+function handleJoker(joker, trigger) {
+    if (joker.trigger === trigger) {
+        // the condition statement is inside this if statement so we don't trigger the else statement if the condition isn't met
+        if ('condition' in joker) {
+            if (joker.condition()) {
+                joker.effect();
+            }
+        } else {
             joker.effect();
         }
-    } else {
-        joker.effect();
+    }
+
+    if (joker.modifyTrigger === trigger) {
+        if ('modifyCondition' in joker) {
+            if ('modifyCondition' in joker) {
+                if (joker.modifyCondition()) {
+                    joker.modifyEffect();
+                }
+            } else {
+                joker.modifyEffect();
+            }
+        }
     }
 }
 
@@ -356,16 +377,20 @@ function handleCard(card, retrigger) {
     // we check if the card is enhanced first so the code doesn't break trying to check for a null enhancement
     if (!('enhancement' in card) || card.enhancement !== 'stone') {
         currentScore.chips += card.rank;
+
+        if ('bonusChips' in card) {
+            currentScore.chips += card.bonusChips;
+        }
     }
 
     // check if any jokers trigger during card scoring
     for (let joker of jokers) {
         if (joker.trigger === 'duringScore') {
             if (joker.retriggering && !gameVars.retrigger) {
-                handleJoker(joker);
+                handleJoker(joker, 'duringScore');
                 gameVars.retrigger = false;
             } else {
-                handleJoker(joker);
+                handleJoker(joker, 'duringScore');
             }
         }
     }
@@ -388,6 +413,4 @@ function getCardIndex(id) {
     return deck.findIndex(card => card.id === id);
 }
 
-scoreHand([new Card(1, 'hearts'), new Card(2, 'hearts'), new Card(3, 'clubs'), new Card(4, 'hearts'), new Card(5, 'hearts')]);
-scoreHand([new Card(1, 'hearts'), new Card(2, 'hearts'), new Card(3, 'clubs'), new Card(4, 'hearts'), new Card(5, 'hearts')]);
-scoreHand([new Card(1, 'hearts'), new Card(2, 'hearts'), new Card(3, 'hearts'), new Card(4, 'hearts'), new Card(5, 'hearts')]);
+scoreHand([deck[52]]);

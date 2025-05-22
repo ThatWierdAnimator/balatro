@@ -74,9 +74,26 @@ var handVars = {
     Egg
     Burglar
     Blackboard
+    DNA
+    Blue Joker
+    Sixth Sense
+    Constellation
+    Faceless Joker
+    Green Joker
+    To Do List
+    Cavendish
+    Card Sharp
+    Red Card
+    Madness
+    Riff Raff
+    Shortcut
+    Hologram
 
     Unfinished Jokers:
     8 Ball
+    Superposition
+    Séance
+    Vagabond
 
     Current Joker - Ice Cream
 */
@@ -430,10 +447,12 @@ var allJokers = {
         effect: () => {
             currentScore.mult += 15;
 
-            if (Math.floor(Math.random() * 6) === 0) {
-                jokers.splice(this.index, 1);
-                gameVars.michelDestroyed = true;
-            }
+            // this is triggered once the round ends
+
+            // if (Math.floor(Math.random() * 6) === 0) {
+            //     jokers.splice(this.index, 1);
+            //     gameVars.michelDestroyed = true;
+            // }
         },
         index: 0
     },
@@ -481,6 +500,8 @@ var allJokers = {
                 }
             }).includes(true)) {
                 gameVars.rideTheBusMult++;
+            } else {
+                gameVars.rideTheBusMult = 0;
             }
 
             if (gameVars.rideTheBusMult > 0) {
@@ -492,7 +513,7 @@ var allJokers = {
     'runner': {
         name: 'Runner',
         trigger: 'afterScore',
-        condition: () => getHandType(playedHand) === 'straight' || getHandType(playedHand) === 'straight flush',
+        condition: () => getHandType(playedHand) === 'straight' || getHandType(playedHand) === 'straight flush' || getHandType(playedHand) === 'royal flush',
         effect: () => {
             if (!('runnerChips' in gameVars)) {
                 gameVars.runnerChips = 0;
@@ -502,6 +523,98 @@ var allJokers = {
 
             currentScore.chips += gameVars.runnerChips;
         }
+    },
+    'iceCream': {
+        name: 'Ice Cream',
+        trigger: 'afterScore',
+        effect: () => {
+            if (!('iceCreamChips' in gameVars)) {
+                gameVars.iceCreamChips = 100;
+            } else {
+                gameVars.iceCreamChips -= 5;
+            }
+
+            currentScore.chips += gameVars.iceCreamChips
+        }
+    },
+    'splash': {
+        name: 'Splash',
+        trigger: 'beforeScore',
+        effect: () => {
+            for (let card of playedHand) {
+                card.scoring = true;
+            }
+        }
+    },
+    'hiker': {
+        name: 'Hiker',
+        trigger: 'duringScore',
+        effect: () => {
+            if (!('bonusChips' in card)) {
+                card.bonusChips = 0;
+            }
+
+            card.bonusChips += 5;
+        }
+    },
+    'superposition': {
+        name: 'Superposition',
+        trigger: 'beforeScore',
+        condition: () => {
+            if ((getHandType(playedHand) === 'straight' || getHandType(playedHand) === 'straight flush' || getHandType(playedHand) === 'royal flush') && playedHand.reduce((c1, c2) => c1.rank === 14 || c2.rank === 14)) {
+                return true;
+            }
+        },
+        effect: () => console.log('Tarot generated!')
+    },
+    'squareJoker': {
+        name: 'Square Joker',
+        trigger: 'afterScore',
+        condition: () => {
+            if (playedHand.length === 4) {
+                if (!('squareJokerChips' in gameVars)) {
+                    gameVars.squareJokerChips = 0;
+                }
+
+                gameVars.squareJokerChips += 4;
+            }
+
+            if ('squareJokerChips' in gameVars && gameVars.squareJokerChips > 0) {
+                return true;
+            }
+        },
+        effect: () => currentScore.chips += gameVars.squareJokerChips
+    },
+    'seance': {
+        name: 'Séance',
+        trigger: 'beforeScore',
+        condition: () => getHandType(playedHand) === 'straight flush' || getHandType(playedHand) === 'royal flush',
+        effect: () => console.log('Spectral generated!')
+    },
+    'vampire': {
+        name: 'Vampire',
+        trigger: 'afterScore',
+        condition: () => 'vampireMult' in gameVars && gameVars.vampireMult > 1,
+        effect: () => currentScore.mult *= gameVars.vampireMult,
+        modifyTrigger: 'beforeScore',
+        modifyCondition: () => playedHand.find(c => 'enhancement' in c) !== undefined,
+        modifyEffect: () => {
+            for (card of playedHand) {
+                if ('enhancement' in card) {
+                    delete card.enhancement;
+                    if (!('vampireMult' in gameVars)) {
+                        gameVars.vampireMult = 1;
+                    }
+                    gameVars.vampireMult += 0.2;
+                }
+            }
+        }
+    },
+    'vagabond': {
+        name: 'Vagabond',
+        trigger: 'beforeScore',
+        condition: () => gameVars.money <= 4,
+        effect: () => console.log('Tarot generated!')
     },
     'bloodStone': {
         name: 'Bloodstone',
