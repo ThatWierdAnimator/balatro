@@ -103,6 +103,18 @@ var handVars = {
     Drunkard
     Golden Joker
     Baseball Card
+    Diet Cola
+    Trading Card
+    Flash Card
+    Popcorn
+    Ancient Joker
+    Ramen
+    Castle
+    Campfire
+    Mr. Bones
+    Swashbuckler
+    Troubadour
+    Certificate
 
     Unfinished Jokers:
     8 Ball
@@ -111,7 +123,7 @@ var handVars = {
     Séance
     Vagabond
 
-    Current Joker - Diet Cola
+    Current Joker - Smeared Joker
 */
 var allJokers = {
     'joker': {
@@ -397,7 +409,7 @@ var allJokers = {
         name: 'Dusk',
         trigger: 'duringScore',
         retriggering: true,
-        condition: () => gameVars.currentHands === 0 && !gameVars.retrigger,
+        condition: () => gameVars.currentHands === 0,
         effect: () => handleCard(card, true)
     },
     'fibonacci': {
@@ -451,7 +463,7 @@ var allJokers = {
         name: 'Hack',
         trigger: 'duringScore',
         retriggering: true,
-        condition: () => card.rank <= 5 && card.rank >= 2 && !gameVars.retrigger && card.enhancement !== 'stone',
+        condition: () => card.rank <= 5 && card.rank >= 2 && card.enhancement !== 'stone',
         effect: () => handleCard(card, true)
     },
     'pareidolia': {
@@ -460,17 +472,16 @@ var allJokers = {
     'grosMichel': {
         name: 'Gros Michel',
         trigger: 'afterScore',
-        effect: () => {
+        effect: function() {
             currentScore.mult += 15;
 
             // this is triggered once the round ends
 
             // if (Math.floor(Math.random() * 6) === 0) {
-            //     jokers.splice(this.index, 1);
+            //     jokers.splice(jokers.findIndex(joker => joker === this), 1);
             //     gameVars.michelDestroyed = true;
             // }
-        },
-        index: 0
+        }
     },
     'evenSteven': {
         name: 'Even Steven',
@@ -711,6 +722,95 @@ var allJokers = {
         condition: () => gameVars.money > 0,
         effect: () => currentScore.chips += gameVars.money * 2
     },
+    'spareTrousers': {
+        name: 'Spare Trousers',
+        trigger: 'afterScore',
+        condition: () => 'trousersMult' in gameVars && gameVars.trousersMult > 0,
+        effect: () => currentScore.mult += gameVars.trousersMult,
+        modifyTrigger: 'beforeScore',
+        modifyCondition: () => {
+            let pairCount = 0;
+            let foundRanks = [];
+            for (i = 0; i < playedHand.length; i++) {
+                let count = 0;
+                for (j = i + 1; j < playedHand.length; j++) {
+                    if (playedHand[i].rank === playedHand[j].rank) {
+                        count++;
+                    }
+
+                    if (j === playedHand.length - 1 && count === 1) {
+                        pairCount++;
+                        foundRanks.push(playedHand[i].rank);
+                    }
+                }
+            }
+            if (pairCount === 2) {
+                return true;
+            }
+        },
+        modifyEffect: () => {
+            if (!('trousersMult' in gameVars)) {
+                gameVars.trousersMult = 0;
+            }
+
+            gameVars.trousersMult += 2;
+        }
+    },
+    'walkieTalkie': {
+        name: 'Walkie Talkie',
+        trigger: 'duringScore',
+        condition: () => card.rank === 4 || card.rank === 10,
+        effect: () => {
+            currentScore.chips += 10;
+            currentScore.mult += 4;
+        }
+    },
+    'seltzer': {
+        name: 'Seltzer',
+        retriggering: true,
+        trigger: 'duringScore',
+        condition: () => {
+            if (!('seltzerLife' in gameVars)) {
+                gameVars.seltzerLife = 10;
+            }
+
+            if (gameVars.seltzerLife > 0) {
+                return true;
+            }
+        },
+        effect: function() {
+            handleCard(card, true);
+            gameVars.seltzerLife--;
+            if (gameVars.seltzerLife <= 0) {
+                jokers.splice(jokers.findIndex(joker => joker === this), 1);
+            }
+        }
+    },
+    'smileyFace': {
+        name: 'Smiley Face',
+        trigger: 'duringScore',
+        condition: () => jokers.includes(allJokers.pareidolia) || (card.rank >= 11 && card.rank <= 13),
+        effect: () => currentScore.mult += 5
+    },
+    'goldenTicket': {
+        name: 'Golden Ticket',
+        trigger: 'duringScore',
+        condition: () => card.enhancement === 'gold',
+        effect: () => gameVars.money += 4
+    },
+    'acrobat': {
+        name: 'Acrobat',
+        trigger: 'afterScore',
+        condition: () => gameVars.currentHands === 0,
+        effect: () => currentScore.mult *= 3
+    },
+    'sockAndBuskin': {
+        name: 'Sock and Buskin',
+        retriggering: true,
+        trigger: 'duringScore',
+        condition: () => jokers.includes(allJokers.pareidolia) || (card.rank <= 13 && card.rank >= 11),
+        effect: () => handleCard(card, true)
+    },
     'bloodStone': {
         name: 'Bloodstone',
         trigger: 'duringScore',
@@ -720,10 +820,48 @@ var allJokers = {
 }
 
 var cardsSpawned = 0;
+let allSuits = ['spades', 'hearts', 'clubs', 'diamonds'];
+let allEnhancements = ['bonus', 'mult', 'wild', 'glass', 'steel', 'stone', 'gold', 'lucky'];
+let allSeals = ['red', 'blue', 'gold', 'purple'];
+let allEditions = ['foil', 'holographic', 'polychrome'];
 // card constructor function
-function Card(rank, suit) {
-    this.rank = rank;
-    this.suit = suit;
+function Card(rank, suit, enhancement, seal, edition) {
+    if (rank === 'rand') {
+        this.rank = Math.floor(Math.random() * 13) + 2;
+    } else {
+        this.rank = rank;
+    }
+    
+    if (suit === 'rand') {
+        this.suit = allSuits[Math.floor(Math.random() * allSuits.length)];
+    } else {
+        this.suit = suit;
+    }
+
+    if (enhancement !== 'none' && enhancement !== undefined) {
+        if (enhancement === 'rand') {
+            this.enhancement = allEnhancements[Math.floor(Math.random() * allEnhancements.length)];
+        } else {
+            this.enhancement = enhancement;
+        }
+    }
+
+    if (seal !== 'none' && seal !== undefined) {
+        if (seal === 'rand') {
+            this.seal = allSeals[Math.floor(Math.random() * allSeals.length)];
+        } else {
+            this.seal = seal;
+        }
+    }
+
+    if (edition !== 'none' && edition !== undefined) {
+        if (edition === 'rand') {
+            this.edition = allEditions[Math.floor(Math.random() * allEditions.length)];
+        } else {
+            this.edition = edition;
+        }
+    }
+
     this.id = cardsSpawned;
     cardsSpawned++;
 }
@@ -781,10 +919,5 @@ var deck = [
     new Card(11, 'diamonds'),
     new Card(12, 'diamonds'),
     new Card(13, 'diamonds'),
-    new Card(14, 'diamonds'),
-    {
-        rank: 12,
-        suit: 'balls',
-        id: 52
-    }
+    new Card(14, 'diamonds')
 ]
