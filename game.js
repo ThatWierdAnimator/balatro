@@ -21,12 +21,14 @@ var gameVars = {
     maxDiscards: 3,
     currentHands: 4,
     currentDiscards: 3,
+    handSize: 8,
     money: 4,
+    probabilitySkew: 0,
     playedHands: {}
 }
 
 let hand = [];
-var jokers = [allJokers.sockAndBuskin];
+var jokers = [allJokers.seeingDouble];
 
 // returns the hand type as a string
 function getHandType(playedHand) {
@@ -47,14 +49,30 @@ function getHandType(playedHand) {
     if (playedHand.length === 5) {
         // check for flush five
         for (i = 1; i < playedHand.length; i++) {
-            if (playedHand[i].suit !== playedHand[i - 1].suit || playedHand[i].rank !== playedHand[i - 1].rank) {
-                break;
-            } else if (i === playedHand.length - 1) {
-                // every card scores in a flush five
-                for (card of playedHand) {
-                    card.scoring = true;
+            if (playedHand[i].suit === playedHand[i - 1].suit && playedHand[i].rank === playedHand[i - 1].rank) {
+                if (i === playedHand.length - 1) {
+                    // every card scores in a flush five
+                    for (card of playedHand) {
+                        card.scoring = true;
+                    }
+                    return 'flush five';
                 }
-                return 'flush five';
+            } else if (jokers.includes(allJokers.smearedJoker) &&
+                ((playedHand[i].suit === 'hearts' && playedHand[i - 1].suit === 'diamonds') ||
+                    (playedHand[i].suit === 'diamonds' && playedHand[i - 1].suit === 'hearts') ||
+                    (playedHand[i].suit === 'clubs' && playedHand[i - 1].suit === 'spades') ||
+                    (playedHand[i].suit === 'spades' && playedHand[i - 1].suit === 'clubs')) &&
+                playedHand[i].rank === playedHand[i - 1].rank
+            ) {
+                if (i === playedHand.length - 1) {
+                    // every card scores in a flush five
+                    for (card of playedHand) {
+                        card.scoring = true;
+                    }
+                    return 'flush five';
+                }
+            } else {
+                break;
             }
         }
 
@@ -65,9 +83,20 @@ function getHandType(playedHand) {
         let seenRanks = [];
         for (i = 1; i < playedHand.length; i++) {
             if (playedHand[i].suit !== playedHand[i - 1].suit) {
-                pairSeen = false;
-                toakSeen = false;
-                break;
+                if (jokers.includes(allJokers.smearedJoker)) {
+                    if (!((playedHand[i].suit === 'hearts' && playedHand[i - 1].suit === 'diamonds') ||
+                        (playedHand[i].suit === 'diamonds' && playedHand[i - 1].suit === 'hearts') ||
+                        (playedHand[i].suit === 'clubs' && playedHand[i - 1].suit === 'spades') ||
+                        (playedHand[i].suit === 'spades' && playedHand[i - 1].suit === 'clubs'))) {
+                        pairSeen = false;
+                        toakSeen = false;
+                        break;
+                    }
+                } else {
+                    pairSeen = false;
+                    toakSeen = false;
+                    break;
+                }
             }
 
             if (!seenRanks.includes(playedHand[i].rank)) {
@@ -185,14 +214,29 @@ function getHandType(playedHand) {
 
         // check for flush
         for (i = 1; i < playedHand.length; i++) {
-            if (playedHand[i].suit !== playedHand[i - 1].suit) {
-                break;
-            } else if (i === playedHand.length - 1) {
-                // every card scores in a flush
-                for (card of playedHand) {
-                    card.scoring = true;
+            if (playedHand[i].suit === playedHand[i - 1].suit) {
+                if (i === playedHand.length - 1) {
+                    // every card scores in a flush
+                    for (card of playedHand) {
+                        card.scoring = true;
+                    }
+                    return 'flush';
                 }
-                return 'flush';
+            } else if (jokers.includes(allJokers.smearedJoker) &&
+                ((playedHand[i].suit === 'hearts' && playedHand[i - 1].suit === 'diamonds') ||
+                    (playedHand[i].suit === 'diamonds' && playedHand[i - 1].suit === 'hearts') ||
+                    (playedHand[i].suit === 'clubs' && playedHand[i - 1].suit === 'spades') ||
+                    (playedHand[i].suit === 'spades' && playedHand[i - 1].suit === 'clubs'))
+            ) {
+                if (i === playedHand.length - 1) {
+                    // every card scores in a flush
+                    for (card of playedHand) {
+                        card.scoring = true;
+                    }
+                    return 'flush';
+                }
+            } else {
+                break;
             }
         }
 
@@ -304,6 +348,11 @@ function scoreHand(localHand) {
         handleJoker(joker, 'afterScore');
     }
 
+    // reset all cards
+    for (card of playedHand) {
+        card.scoring = false;
+    }
+
     // log chips, mult, and score to the console
     console.log(`Chips: ${currentScore.chips}\nMult: ${Number(currentScore.mult.toFixed(2))}\nScore: ${Math.round(currentScore.chips * currentScore.mult)}`);
 }
@@ -352,7 +401,7 @@ function handleCard(card, retrigger) {
         } else if (card.enhancement === 'stone') {
             currentScore.chips += 50;
         } else if (card.enhancement === 'lucky') {
-            if (Math.floor(Math.random() * 5) === 0) {
+            if (Math.floor(Math.random() * 5) < 1 + gameVars.probabilitySkew) {
                 currentScore.mult += 20;
 
                 if (!('luckyHits') in gameVars || gameVars.luckyHits === undefined) {
@@ -362,7 +411,7 @@ function handleCard(card, retrigger) {
                 gameVars.luckyHits++;
             }
 
-            if (Math.floor(Math.random() * 20) === 0) {
+            if (Math.floor(Math.random() * 20) < 1 + gameVars.probabilitySkew) {
                 gameVars.money += 20;
 
                 if (!('luckyHits') in gameVars || gameVars.luckyHits === undefined) {
@@ -374,7 +423,13 @@ function handleCard(card, retrigger) {
         } else if (card.enhancement === 'glass') {
             currentScore.mult *= 2;
 
-            if (Math.floor(Math.random() * 4) === 0) {
+            if (Math.floor(Math.random() * 4) < 1 + gameVars.probabilitySkew) {
+                if (!('glassBreaks') in gameVars || gameVars.glassBreaks === undefined) {
+                    gameVars.glassBreaks = 0;
+                }
+
+                gameVars.glassBreaks++;
+
                 deck.splice(getCardIndex(card.id), 1);
             }
         }
@@ -403,15 +458,12 @@ function handleCard(card, retrigger) {
 
     // check if any jokers trigger during card scoring
     for (let joker of jokers) {
-        if (joker.trigger === 'duringScore') {
-            if (joker.retriggering) {
-                if (!gameVars.retrigger) {
-                    handleJoker(joker, 'duringScore');
-                    gameVars.retrigger = false;
-                }
-            } else {
+        if (joker.retriggering) {
+            if (!gameVars.retrigger) {
                 handleJoker(joker, 'duringScore');
             }
+        } else {
+            handleJoker(joker, 'duringScore');
         }
     }
 
@@ -423,9 +475,6 @@ function handleCard(card, retrigger) {
             handleCard(card, true);
         }
     }
-
-    // reset the card
-    card.scoring = false;
 }
 
 // returns the card's index by it's id
@@ -433,4 +482,4 @@ function getCardIndex(id) {
     return deck.findIndex(card => card.id === id);
 }
 
-scoreHand([new Card(2, 'hearts')]);
+scoreHand([new Card(2, 'clubs'), new Card(2, 'clubs'), new Card(2, 'clubs'), new Card(2, 'clubs'), new Card(2, 'clubs')]);
