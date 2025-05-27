@@ -28,12 +28,12 @@ var gameVars = {
 }
 
 let hand = [];
-var jokers = [allJokers.seeingDouble];
+var jokers = [allJokers];
 
 // returns the hand type as a string
 function getHandType(playedHand) {
     // we sort the hand by rank to make checking straights easy
-    playedHand.sort(function (a, b) {
+    let tempHand = playedHand.sort(function (a, b) {
         if (a.rank < b.rank) {
             return -1; // if the first card is lower than the next it comes before
         }
@@ -41,32 +41,32 @@ function getHandType(playedHand) {
             return 1; // if the first card is higher than the next it comes after
         }
         return 0; // the ranks are equal
-    });
+    }).map(value => value);
 
     // all hands are ordered by pick priority
 
     // these hands need five cards to be seen
-    if (playedHand.length === 5) {
+    if (tempHand.length === 5) {
         // check for flush five
-        for (i = 1; i < playedHand.length; i++) {
-            if (playedHand[i].suit === playedHand[i - 1].suit && playedHand[i].rank === playedHand[i - 1].rank) {
-                if (i === playedHand.length - 1) {
+        for (i = 1; i < tempHand.length; i++) {
+            if (tempHand[i].suit === tempHand[i - 1].suit && tempHand[i].rank === tempHand[i - 1].rank) {
+                if (i === tempHand.length - 1) {
                     // every card scores in a flush five
-                    for (card of playedHand) {
+                    for (card of tempHand) {
                         card.scoring = true;
                     }
                     return 'flush five';
                 }
             } else if (jokers.includes(allJokers.smearedJoker) &&
-                ((playedHand[i].suit === 'hearts' && playedHand[i - 1].suit === 'diamonds') ||
-                    (playedHand[i].suit === 'diamonds' && playedHand[i - 1].suit === 'hearts') ||
-                    (playedHand[i].suit === 'clubs' && playedHand[i - 1].suit === 'spades') ||
-                    (playedHand[i].suit === 'spades' && playedHand[i - 1].suit === 'clubs')) &&
-                playedHand[i].rank === playedHand[i - 1].rank
+                ((tempHand[i].suit === 'hearts' && tempHand[i - 1].suit === 'diamonds') ||
+                    (tempHand[i].suit === 'diamonds' && tempHand[i - 1].suit === 'hearts') ||
+                    (tempHand[i].suit === 'clubs' && tempHand[i - 1].suit === 'spades') ||
+                    (tempHand[i].suit === 'spades' && tempHand[i - 1].suit === 'clubs')) &&
+                tempHand[i].rank === tempHand[i - 1].rank
             ) {
-                if (i === playedHand.length - 1) {
+                if (i === tempHand.length - 1) {
                     // every card scores in a flush five
-                    for (card of playedHand) {
+                    for (card of tempHand) {
                         card.scoring = true;
                     }
                     return 'flush five';
@@ -81,13 +81,13 @@ function getHandType(playedHand) {
         let pairSeen = false;
         let toakSeen = false;
         let seenRanks = [];
-        for (i = 1; i < playedHand.length; i++) {
-            if (playedHand[i].suit !== playedHand[i - 1].suit) {
+        for (i = 1; i < tempHand.length; i++) {
+            if (tempHand[i].suit !== tempHand[i - 1].suit) {
                 if (jokers.includes(allJokers.smearedJoker)) {
-                    if (!((playedHand[i].suit === 'hearts' && playedHand[i - 1].suit === 'diamonds') ||
-                        (playedHand[i].suit === 'diamonds' && playedHand[i - 1].suit === 'hearts') ||
-                        (playedHand[i].suit === 'clubs' && playedHand[i - 1].suit === 'spades') ||
-                        (playedHand[i].suit === 'spades' && playedHand[i - 1].suit === 'clubs'))) {
+                    if (!((tempHand[i].suit === 'hearts' && tempHand[i - 1].suit === 'diamonds') ||
+                        (tempHand[i].suit === 'diamonds' && tempHand[i - 1].suit === 'hearts') ||
+                        (tempHand[i].suit === 'clubs' && tempHand[i - 1].suit === 'spades') ||
+                        (tempHand[i].suit === 'spades' && tempHand[i - 1].suit === 'clubs'))) {
                         pairSeen = false;
                         toakSeen = false;
                         break;
@@ -99,38 +99,38 @@ function getHandType(playedHand) {
                 }
             }
 
-            if (!seenRanks.includes(playedHand[i].rank)) {
+            if (!seenRanks.includes(tempHand[i].rank)) {
                 let count = 0;
-                for (j = i; j < playedHand.length; j++) {
-                    if (playedHand[i - 1].rank === playedHand[j].rank) {
+                for (j = i; j < tempHand.length; j++) {
+                    if (tempHand[i - 1].rank === tempHand[j].rank) {
                         count++;
                     }
 
-                    if (j === playedHand.length - 1 && count === 1) {
+                    if (j === tempHand.length - 1 && count === 1) {
                         pairSeen = true;
-                        seenRanks.push(playedHand[i].rank);
-                    } else if (j === playedHand.length - 1 && count === 2) {
+                        seenRanks.push(tempHand[i].rank);
+                    } else if (j === tempHand.length - 1 && count === 2) {
                         toakSeen = true;
-                        seenRanks.push(playedHand[i].rank);
+                        seenRanks.push(tempHand[i].rank);
                     }
                 }
             }
         }
         if (toakSeen && pairSeen) {
             // every card scores in a flush house
-            for (card of playedHand) {
+            for (card of tempHand) {
                 card.scoring = true;
             }
             return 'flush house';
         }
 
         // check for five of a kind
-        for (i = 1; i < playedHand.length; i++) {
-            if (playedHand[i].rank !== playedHand[i - 1].rank) {
+        for (i = 1; i < tempHand.length; i++) {
+            if (tempHand[i].rank !== tempHand[i - 1].rank) {
                 break;
-            } else if (i === playedHand.length - 1) {
+            } else if (i === tempHand.length - 1) {
                 // every card scores in a five of a kind
-                for (card of playedHand) {
+                for (card of tempHand) {
                     card.scoring = true;
                 }
                 return 'five of a kind';
@@ -138,25 +138,25 @@ function getHandType(playedHand) {
         }
 
         // check for straight flush
-        for (i = 1; i < playedHand.length; i++) {
-            if (i === playedHand.length - 1 && playedHand[i].suit === playedHand[i - 1].suit && playedHand[i].rank === 14 && playedHand[i - 1].rank === 5) {
+        for (i = 1; i < tempHand.length; i++) {
+            if (i === tempHand.length - 1 && tempHand[i].suit === tempHand[i - 1].suit && tempHand[i].rank === 14 && tempHand[i - 1].rank === 5) {
                 // every card scores in a straight flush
-                for (card of playedHand) {
+                for (card of tempHand) {
                     card.scoring = true;
                 }
                 return 'straight flush';
-            } else if (playedHand[i].suit !== playedHand[i - 1].suit || playedHand[i].rank !== playedHand[i - 1].rank + 1) {
+            } else if (tempHand[i].suit !== tempHand[i - 1].suit || tempHand[i].rank !== tempHand[i - 1].rank + 1) {
                 break;
-            } else if (i === playedHand.length - 1 && playedHand[playedHand.length - 1].rank === 14) {
+            } else if (i === tempHand.length - 1 && tempHand[tempHand.length - 1].rank === 14) {
                 // if the highest card is an ace the hand is a royale flush
                 // every card scores in a royale flush
-                for (card of playedHand) {
+                for (card of tempHand) {
                     card.scoring = true;
                 }
                 return 'royal flush'
-            } else if (i === playedHand.length - 1) {
+            } else if (i === tempHand.length - 1) {
                 // every card scores in a straight flush
-                for (card of playedHand) {
+                for (card of tempHand) {
                     card.scoring = true;
                 }
                 return 'straight flush';
@@ -166,71 +166,71 @@ function getHandType(playedHand) {
 
     // four of a kind is here because this is where it falls in priority, but it doesn't need five cards to be played
     // four of a kind
-    for (i = 0; i < playedHand.length; i++) {
+    for (i = 0; i < tempHand.length; i++) {
         let count = 0;
-        for (j = i + 1; j < playedHand.length; j++) {
-            if (playedHand[i].rank === playedHand[j].rank) {
+        for (j = i + 1; j < tempHand.length; j++) {
+            if (tempHand[i].rank === tempHand[j].rank) {
                 count++;
             }
 
-            if (j === playedHand.length - 1 && count === 3) {
+            if (j === tempHand.length - 1 && count === 3) {
                 return 'four of a kind';
             }
         }
     }
 
     // these hands need five cards to be played
-    if (playedHand.length === 5) {
+    if (tempHand.length === 5) {
         // check for full house
         // toak stands for three of a kind
         let pairSeen = false;
         let toakSeen = false;
         let seenRanks = [];
-        for (i = 1; i < playedHand.length; i++) {
-            if (!seenRanks.includes(playedHand[i].rank)) {
+        for (i = 1; i < tempHand.length; i++) {
+            if (!seenRanks.includes(tempHand[i].rank)) {
                 let count = 0;
-                for (j = i; j < playedHand.length; j++) {
-                    if (playedHand[i - 1].rank === playedHand[j].rank) {
+                for (j = i; j < tempHand.length; j++) {
+                    if (tempHand[i - 1].rank === tempHand[j].rank) {
                         count++;
                     }
 
-                    if (j === playedHand.length - 1 && count === 1) {
+                    if (j === tempHand.length - 1 && count === 1) {
                         pairSeen = true;
-                        seenRanks.push(playedHand[i].rank);
-                    } else if (j === playedHand.length - 1 && count === 2) {
+                        seenRanks.push(tempHand[i].rank);
+                    } else if (j === tempHand.length - 1 && count === 2) {
                         toakSeen = true;
-                        seenRanks.push(playedHand[i].rank);
+                        seenRanks.push(tempHand[i].rank);
                     }
                 }
             }
         }
         if (toakSeen && pairSeen) {
             // every card scores in a full house
-            for (card of playedHand) {
+            for (card of tempHand) {
                 card.scoring = true;
             }
             return 'full house';
         }
 
         // check for flush
-        for (i = 1; i < playedHand.length; i++) {
-            if (playedHand[i].suit === playedHand[i - 1].suit) {
-                if (i === playedHand.length - 1) {
+        for (i = 1; i < tempHand.length; i++) {
+            if (tempHand[i].suit === tempHand[i - 1].suit) {
+                if (i === tempHand.length - 1) {
                     // every card scores in a flush
-                    for (card of playedHand) {
+                    for (card of tempHand) {
                         card.scoring = true;
                     }
                     return 'flush';
                 }
             } else if (jokers.includes(allJokers.smearedJoker) &&
-                ((playedHand[i].suit === 'hearts' && playedHand[i - 1].suit === 'diamonds') ||
-                    (playedHand[i].suit === 'diamonds' && playedHand[i - 1].suit === 'hearts') ||
-                    (playedHand[i].suit === 'clubs' && playedHand[i - 1].suit === 'spades') ||
-                    (playedHand[i].suit === 'spades' && playedHand[i - 1].suit === 'clubs'))
+                ((tempHand[i].suit === 'hearts' && tempHand[i - 1].suit === 'diamonds') ||
+                    (tempHand[i].suit === 'diamonds' && tempHand[i - 1].suit === 'hearts') ||
+                    (tempHand[i].suit === 'clubs' && tempHand[i - 1].suit === 'spades') ||
+                    (tempHand[i].suit === 'spades' && tempHand[i - 1].suit === 'clubs'))
             ) {
-                if (i === playedHand.length - 1) {
+                if (i === tempHand.length - 1) {
                     // every card scores in a flush
-                    for (card of playedHand) {
+                    for (card of tempHand) {
                         card.scoring = true;
                     }
                     return 'flush';
@@ -241,18 +241,18 @@ function getHandType(playedHand) {
         }
 
         // check for straight
-        for (i = 1; i < playedHand.length; i++) {
-            if (i === playedHand.length - 1 && playedHand[i].rank === 14 && playedHand[i - 1].rank === 5) {
+        for (i = 1; i < tempHand.length; i++) {
+            if (i === tempHand.length - 1 && tempHand[i].rank === 14 && tempHand[i - 1].rank === 5) {
                 // every card scores in a straight
-                for (card of playedHand) {
+                for (card of tempHand) {
                     card.scoring = true;
                 }
                 return 'flush';
-            } else if (playedHand[i].rank !== playedHand[i - 1].rank + 1) {
+            } else if (tempHand[i].rank !== tempHand[i - 1].rank + 1) {
                 break;
-            } else if (i === playedHand.length - 1) {
+            } else if (i === tempHand.length - 1) {
                 // every card scores in a straight
-                for (card of playedHand) {
+                for (card of tempHand) {
                     card.scoring = true;
                 }
                 return 'straight';
@@ -263,19 +263,19 @@ function getHandType(playedHand) {
     // check for three of a kind, two pair, and pair
     let pairCount = 0;
     let foundRanks = [];
-    for (i = 0; i < playedHand.length; i++) {
+    for (i = 0; i < tempHand.length; i++) {
         let count = 0;
-        for (j = i + 1; j < playedHand.length; j++) {
-            if (playedHand[i].rank === playedHand[j].rank) {
+        for (j = i + 1; j < tempHand.length; j++) {
+            if (tempHand[i].rank === tempHand[j].rank) {
                 count++;
             }
 
-            if (j === playedHand.length - 1 && count === 1) {
+            if (j === tempHand.length - 1 && count === 1) {
                 pairCount++;
-                foundRanks.push(playedHand[i].rank);
-            } else if (j === playedHand.length - 1 && count === 2) {
-                for (card of playedHand) {
-                    if (card.rank === playedHand[i].rank) {
+                foundRanks.push(tempHand[i].rank);
+            } else if (j === tempHand.length - 1 && count === 2) {
+                for (card of tempHand) {
+                    if (card.rank === tempHand[i].rank) {
                         card.scoring = true;
                     }
                 }
@@ -284,14 +284,14 @@ function getHandType(playedHand) {
         }
     }
     if (pairCount === 2) {
-        for (card of playedHand) {
+        for (card of tempHand) {
             if (foundRanks.includes(card.rank)) {
                 card.scoring = true;
             }
         }
         return 'two pair';
     } else if (pairCount === 1) {
-        for (card of playedHand) {
+        for (card of tempHand) {
             if (foundRanks.includes(card.rank)) {
                 card.scoring = true;
             }
@@ -301,7 +301,7 @@ function getHandType(playedHand) {
 
     // if nothing passes, return high card
     // the highest played card will score
-    playedHand[playedHand.length - 1].scoring = true;
+    tempHand[tempHand.length - 1].scoring = true;
     return 'high card';
 }
 
@@ -359,6 +359,18 @@ function scoreHand(localHand) {
 
 // handles the joker, checks for condition and applies effect
 function handleJoker(joker, trigger) {
+    if (joker.modifyTrigger === trigger) {
+        if ('modifyEffect' in joker) {
+            if ('modifyCondition' in joker) {
+                if (joker.modifyCondition()) {
+                    joker.modifyEffect();
+                }
+            } else {
+                joker.modifyEffect();
+            }
+        }
+    }
+
     if (joker.trigger === trigger) {
         // the condition statement is inside this if statement so we don't trigger the else statement if the condition isn't met
         if ('condition' in joker) {
@@ -367,18 +379,6 @@ function handleJoker(joker, trigger) {
             }
         } else {
             joker.effect();
-        }
-    }
-
-    if (joker.modifyTrigger === trigger) {
-        if ('modifyCondition' in joker) {
-            if ('modifyCondition' in joker) {
-                if (joker.modifyCondition()) {
-                    joker.modifyEffect();
-                }
-            } else {
-                joker.modifyEffect();
-            }
         }
     }
 }
@@ -482,4 +482,80 @@ function getCardIndex(id) {
     return deck.findIndex(card => card.id === id);
 }
 
-scoreHand([new Card(2, 'clubs'), new Card(2, 'clubs'), new Card(2, 'clubs'), new Card(2, 'clubs'), new Card(2, 'clubs')]);
+// runs the round
+function runRound() {
+    for (i = 0; i < gameVars.handSize; i++) {
+        let id = Math.floor(Math.random() * cardsSpawned);
+        if (deck[getCardIndex(id)] && !deck[getCardIndex(id)].dealt) {
+            deck[getCardIndex(id)].dealt = true;
+            hand.push(deck[getCardIndex(id)]);
+        } else {
+            i -= 1;
+        }
+    }
+    sortHand('rank');
+}
+
+function sortHand(type) {
+    if (type === 'rank') {
+        hand.sort(function (a, b) {
+            if (allSuits.findIndex(suit => suit === a.suit) < allSuits.findIndex(suit => suit === b.suit)) {
+                if (a.rank < b.rank) {
+                    return 1;
+                } else if (a.rank > b.rank) {
+                    return -1;
+                } else {
+                    return -1;
+                }
+            } else if (allSuits.findIndex(suit => suit === a.suit) > allSuits.findIndex(suit => suit === b.suit)) {
+                if (a.rank < b.rank) {
+                    return 1;
+                } else if (a.rank > b.rank) {
+                    return -1;
+                } else {
+                    return 1;
+                }
+            } else {
+                if (a.rank < b.rank) {
+                    return 1;
+                } else if (a.rank > b.rank) {
+                    return -1;
+                } else {
+                    return 0;
+                }
+            }
+        });
+    }
+    if (type === 'suit') {
+        hand.sort(function (a, b) {
+            if (a.rank < b.rank) {
+                if (allSuits.findIndex(suit => suit === a.suit) < allSuits.findIndex(suit => suit === b.suit)) {
+                    return -1;
+                } else if (allSuits.findIndex(suit => suit === a.suit) > allSuits.findIndex(suit => suit === b.suit)) {
+                    return 1;
+                } else {
+                    return 1;
+                }
+            } else if (a.rank > b.rank) {
+                if (allSuits.findIndex(suit => suit === a.suit) < allSuits.findIndex(suit => suit === b.suit)) {
+                    return -1;
+                } else if (allSuits.findIndex(suit => suit === a.suit) > allSuits.findIndex(suit => suit === b.suit)) {
+                    return 1;
+                } else {
+                    return -1;
+                }
+            } else {
+                if (allSuits.findIndex(suit => suit === a.suit) < allSuits.findIndex(suit => suit === b.suit)) {
+                    return -1;
+                } else if (allSuits.findIndex(suit => suit === a.suit) > allSuits.findIndex(suit => suit === b.suit)) {
+                    return 1;
+                } else {
+                    return 0;
+                }
+            }
+        });
+    }
+}
+
+// scoreHand([new Card(12, 'hearts'), new Card(12, 'hearts'), new Card(12, 'hearts'), new Card(12, 'hearts'), new Card(12, 'hearts')]);
+runRound();
