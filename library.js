@@ -59,6 +59,9 @@ var handVars = {
     afterScore - Triggered after all cards are scored in a hand
     duringScore - Triggered when each card is scored, if it has a condition attribute the condition is checks
     beforeScore - Triggered just before all cards are scored
+    roundStart - Triggered when the round starts
+    roundEnd - Triggered when the round ends
+    onDiscard - Triggered when a discard happens
 
     Skipped Jokers:
     Four Fingers
@@ -944,7 +947,9 @@ var allJokers = {
         name: 'Blueprint',
         modifyTrigger: 'beforeScore',
         modifyEffect: function () {
-            this.retriggering = jokers[this.index + 1].retriggering;
+            if ('retriggering' in jokers[this.index + 1]) {
+                this.retriggering = jokers[this.index + 1].retriggering;
+            }
             if ('trigger' in jokers[this.index + 1]) {
                 this.trigger = jokers[this.index + 1].trigger;
             }
