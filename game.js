@@ -23,6 +23,8 @@ var gameVars = {
     maxDiscards: 3,
     currentHands: 4,
     currentDiscards: 3,
+    firstHand: true,
+    firstDiscard: true,
     handSize: 8,
     money: 4,
     probabilitySkew: 0,
@@ -33,7 +35,7 @@ var gameVars = {
 }
 
 let hand = [];
-var jokers = [allJokers.raisedFist];
+var jokers = [allJokers.dna];
 
 // returns the hand type as a string
 function getHandType(playedHand) {
@@ -382,6 +384,7 @@ function scoreHand(localHand) {
 
         // log chips, mult, and score to the console
         console.log(`Chips: ${currentScore.chips}\nMult: ${Number(currentScore.mult.toFixed(2))}\nScore: ${Math.round(currentScore.chips * currentScore.mult)}`);
+        console.log(deck);
 
         // the current score to the round score
         gameVars.score += currentScore.chips * currentScore.mult;
@@ -392,13 +395,13 @@ function scoreHand(localHand) {
             gameVars.gameState = 'roundEnd';
             console.log(`Ending score: ${Math.round(gameVars.score)}`)
             console.log('win!!! yey!!1!!!');
-
+            
             // run all jokers that are at the end of round
             for (let joker of jokers) {
                 handleJoker(joker, 'roundEnd');
             }
-
-            // run all gold cards
+            
+            // run all round ending held in hand abilities
             for (card of hand) {
                 handleHeldCard(card);
             }
@@ -408,6 +411,8 @@ function scoreHand(localHand) {
             // otherwise deal another hand
             dealHand();
         }
+
+        gameVars.firstHand = false;
     } else {
         if (localHand.length > 0) {
             console.log('No hands remaining');
@@ -439,6 +444,7 @@ function discardHand(localHand) {
         dealHand();
 
         console.log(`Discards left: ${gameVars.currentDiscards}`);
+        gameVars.firstDiscard = false;
     } else {
         if (localHand.length > 0) {
             console.log('No remaining discards');
@@ -761,6 +767,8 @@ function runRound(neededScore) {
     console.log(`Discards left: ${gameVars.currentDiscards}`);
     console.log(`Score to beat blind: ${neededScore}`);
     // set variables
+    gameVars.firstHand = true;
+    gameVars.firstDiscard = true;
     gameVars.currentDiscards = gameVars.maxDiscards;
     gameVars.currentHands = gameVars.maxHands;
     gameVars.neededScore = neededScore;

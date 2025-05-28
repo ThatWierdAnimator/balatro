@@ -68,12 +68,8 @@ var handVars = {
     Credit Card
     Ceremonial Dagger
     Choas the Clown
-    Delayed Gratification
-    Supernova
     Space Joker
     Egg
-    Burglar
-    Blackboard
     DNA
     Blue Joker
     Sixth Sense
@@ -543,7 +539,8 @@ var allJokers = {
     'delayedGratification': {
         name: 'Delayed Gratification',
         trigger: 'roundEnd',
-        condition: () => gameVars.currentDiscards === gameVars.maxDiscards
+        condition: () => gameVars.firstDiscard,
+        effect: () => gameVars.money += gameVars.currentDiscards * 2
     },
     'hack': {
         name: 'Hack',
@@ -596,6 +593,11 @@ var allJokers = {
         condition: () => (jokers.includes(allJokers.pareidolia) || (card.rank <= 13 && card.rank >= 11)) && Math.floor(Math.random() * 2) < 1 + gameVars.probabilitySkew,
         effect: () => gameVars.money += 2
     },
+    'supernova': {
+        name: 'Supernova',
+        trigger: 'afterScore',
+        effect: () => currentScore.mult += gameVars.playedHands[getHandType(playedHand)]
+    },
     'rideTheBus': {
         name: 'Ride the Bus',
         trigger: 'afterScore',
@@ -623,6 +625,20 @@ var allJokers = {
         },
         effect: () => currentScore.mult += gameVars.rideTheBusMult
     },
+    'blackboard': {
+        name: 'Blackboard',
+        trigger: 'afterScore',
+        condition: () => hand.filter(c => c.suit === 'hearts' || c.suit === 'diamonds').length === 0,
+        effect: () => currentScore.mult *= 3
+    },
+    'burglar': {
+        name: 'Burglar',
+        trigger: 'roundStart',
+        effect: () => {
+            gameVars.currentHands += 3;
+            gameVars.currentDiscards = 0;
+        }
+    },
     'runner': {
         name: 'Runner',
         trigger: 'afterScore',
@@ -648,6 +664,14 @@ var allJokers = {
             }
 
             currentScore.chips += gameVars.iceCreamChips
+        }
+    },
+    'dna': {
+        name: 'DNA',
+        trigger: 'beforeScore',
+        condition: () => gameVars.firstHand && playedHand.length === 1,
+        effect: () => {
+            deck.push(new Card(card.rank, card.suit, card.enhancement, card.seal, card.edition));
         }
     },
     'splash': {
