@@ -33,7 +33,7 @@ var gameVars = {
 }
 
 let hand = [];
-var jokers = [];
+var jokers = [allJokers.raisedFist];
 
 // returns the hand type as a string
 function getHandType(playedHand) {
@@ -141,7 +141,9 @@ function getHandType(playedHand) {
                 return 'five of a kind';
             }
         }
+    }
 
+    if (tempHand.length === 5 || (jokers.includes(allJokers.fourFingers) && playedHand.length >= 4)) {
         // check for straight flush
         for (i = 1; i < tempHand.length; i++) {
             if (i === tempHand.length - 1 && tempHand[i].suit === tempHand[i - 1].suit && tempHand[i].rank === 14 && tempHand[i - 1].rank === 5) {
@@ -185,7 +187,7 @@ function getHandType(playedHand) {
     }
 
     // these hands need five cards to be played
-    if (tempHand.length === 5) {
+    if (tempHand.length === 5 || (jokers.includes(allJokers.fourFingers) && playedHand.length >= 4)) {
         // check for full house
         // toak stands for three of a kind
         let pairSeen = false;
@@ -320,51 +322,59 @@ function scoreHand(localHand) {
         }
 
         console.clear();
-    
+
         // remove a hand from play
         gameVars.currentHands--;
-    
+
         // global variables so jokers can access them
         playedHand = localHand;
         // get the hand's score from the score library
         currentScore = { ...handVars[getHandType(playedHand)] };
         console.log(getHandType(playedHand));
-    
+
         // log the played hand to gameVars
         if (!(getHandType(playedHand) in gameVars.playedHands)) {
             gameVars.playedHands[getHandType(playedHand)] = 0;
         }
         gameVars.playedHands[getHandType(playedHand)]++;
-    
+
         // sets gameVars.mostPlayedHand to the key that's value is equal to the highest number of hands played
         gameVars.mostPlayedHand = Object.keys(gameVars.playedHands).find(key => gameVars.playedHands[key] === Math.max(...Object.values(gameVars.playedHands)));
-    
+
         // check if any jokers trigger before score
         for (let joker of jokers) {
             handleJoker(joker, 'beforeScore');
         }
-    
+
+        // handle all held in hand jokers
+        for (card of hand) {
+            handleHeldCard(card);
+
+            // if it works it works ¯\_(ツ)_/¯
+            delete gameVars.retrigger;
+        }
+
         // loop over every card
         for (card of playedHand) {
             // if the card is stone it always scores
             if (card.enhancement === 'stone') {
                 card.scoring = true;
             }
-    
+
             // if the card scores, handle the card
             if (card.scoring) {
                 handleCard(card);
             }
-    
+
             // if it works it works ¯\_(ツ)_/¯
             delete gameVars.retrigger;
         }
-    
+
         // check if any of the jokers trigger after card scoring
         for (let joker of jokers) {
             handleJoker(joker, 'afterScore');
         }
-    
+
         // reset all cards
         for (card of playedHand) {
             delete card.scoring;
@@ -372,7 +382,7 @@ function scoreHand(localHand) {
 
         // log chips, mult, and score to the console
         console.log(`Chips: ${currentScore.chips}\nMult: ${Number(currentScore.mult.toFixed(2))}\nScore: ${Math.round(currentScore.chips * currentScore.mult)}`);
-    
+
         // the current score to the round score
         gameVars.score += currentScore.chips * currentScore.mult;
         // check if that's enough to beat the round
@@ -386,6 +396,11 @@ function scoreHand(localHand) {
             // run all jokers that are at the end of round
             for (let joker of jokers) {
                 handleJoker(joker, 'roundEnd');
+            }
+
+            // run all gold cards
+            for (card of hand) {
+                handleHeldCard(card);
             }
         } else {
             console.log(`Hands left: ${gameVars.currentHands}`);
@@ -413,13 +428,13 @@ function discardHand(localHand) {
             delete card.selected;
             hand.splice(hand.findIndex(c => c === card), 1);
         }
-    
+
         // remove a hand from play
         gameVars.currentDiscards--;
-    
+
         // global variables so jokers can access them
         playedHand = localHand;
-    
+
         // deal another hand
         dealHand();
 
@@ -478,21 +493,25 @@ function handleCard(card, retrigger) {
             if (Math.floor(Math.random() * 5) < 1 + gameVars.probabilitySkew) {
                 currentScore.mult += 20;
 
-                if (!('luckyHits') in gameVars || gameVars.luckyHits === undefined) {
-                    gameVars.luckyHits = 0;
-                }
+                if (jokers.includes(allJokers.luckyCat)) {
+                    if (!('luckyHits') in gameVars || gameVars.luckyHits === undefined) {
+                        gameVars.luckyHits = 0;
+                    }
 
-                gameVars.luckyHits++;
+                    gameVars.luckyHits++;
+                }
             }
 
             if (Math.floor(Math.random() * 20) < 1 + gameVars.probabilitySkew) {
                 gameVars.money += 20;
 
-                if (!('luckyHits') in gameVars || gameVars.luckyHits === undefined) {
-                    gameVars.luckyHits = 0;
-                }
+                if (jokers.includes(allJokers.luckyCat)) {
+                    if (!('luckyHits') in gameVars || gameVars.luckyHits === undefined) {
+                        gameVars.luckyHits = 0;
+                    }
 
-                gameVars.luckyHits++;
+                    gameVars.luckyHits++;
+                }
             }
         } else if (card.enhancement === 'glass') {
             currentScore.mult *= 2;
@@ -547,6 +566,46 @@ function handleCard(card, retrigger) {
             gameVars.money += 3;
         } else if (card.seal === 'red' && !retrigger) {
             handleCard(card, true);
+        }
+    }
+}
+
+// handles cards held in hand
+function handleHeldCard(card, retrigger) {
+    // tell other scripts a retrigger is going on
+    if (gameVars.retrigger === undefined) {
+        gameVars.retrigger = false;
+    } else {
+        gameVars.retrigger = retrigger;
+    }
+
+    // handle all enhancements
+    if ('enhancement' in card) {
+        if (card.enhancement === 'steel') {
+            currentScore.mult *= 1.5;
+        } else if (card.enhancement === 'gold' && gameVars.gameState === 'roundEnd') {
+            gameVars.money += 3
+        }
+    }
+
+    // check if any jokers trigger during card scoring
+    for (let joker of jokers) {
+        // all the retrigger nonsense
+        if (joker.retriggering) {
+            if (!gameVars.retrigger) {
+                handleJoker(joker, 'heldInHand');
+            }
+        } else {
+            handleJoker(joker, 'heldInHand');
+        }
+    }
+
+    // handle all seals
+    if ('seal' in card) {
+        if (card.seal === 'red' && !retrigger) {
+            handleHeldCard(card, true);
+        } else if (card.seal === 'blue' && gameVars.gameState === 'roundEnd') {
+            // gimme a planet card gang
         }
     }
 }
@@ -651,8 +710,9 @@ function sortHand(type) {
                 document.getElementById('card-${i}').classList.remove('selected');
                 hand[${i}].selected = false;
             }
-        } toggleSelectSelf()">`;
-        if(hand[i].selected) {
+        } toggleSelectSelf()"><p>`;
+
+        if (hand[i].selected) {
             template = `<button class="card selected" id="card-${i}" onclick="function toggleSelectSelf() {
                 if (hand.filter(c => c.selected).length < 5 && !hand[${i}].selected) {
                     document.getElementById('card-${i}').classList.add('selected');
@@ -661,18 +721,31 @@ function sortHand(type) {
                     document.getElementById('card-${i}').classList.remove('selected');
                     hand[${i}].selected = false;
                 }
-            } toggleSelectSelf()">`;
+            } toggleSelectSelf()"><p>`;
         }
+
+        if ('edition' in hand[i]) {
+            template += `${hand[i].edition} `
+        }
+
+        if ('seal' in hand[i]) {
+            template += `${hand[i].seal} seal `
+        }
+
+        if ('enhancement' in hand[i]) {
+            template += `${hand[i].enhancement} `
+        }
+
         if (hand[i].rank === 14) {
-            displayHand.innerHTML += `${template}<p>Ace of ${hand[i].suit}</p></button>`
+            displayHand.innerHTML += `${template}Ace of ${hand[i].suit}</p></button>`
         } else if (hand[i].rank === 13) {
-            displayHand.innerHTML += `${template}<p>King of ${hand[i].suit}</p></button>`
+            displayHand.innerHTML += `${template}King of ${hand[i].suit}</p></button>`
         } else if (hand[i].rank === 12) {
-            displayHand.innerHTML += `${template}<p>Queen of ${hand[i].suit}</p></button>`
+            displayHand.innerHTML += `${template}Queen of ${hand[i].suit}</p></button>`
         } else if (hand[i].rank === 11) {
-            displayHand.innerHTML += `${template}<p>Jack of ${hand[i].suit}</p></button>`
+            displayHand.innerHTML += `${template}Jack of ${hand[i].suit}</p></button>`
         } else {
-            displayHand.innerHTML += `${template}<p>${hand[i].rank} of ${hand[i].suit}</p></button>`
+            displayHand.innerHTML += `${template}${hand[i].rank} of ${hand[i].suit}</p></button>`
         }
     }
 }
@@ -688,6 +761,8 @@ function runRound(neededScore) {
     console.log(`Discards left: ${gameVars.currentDiscards}`);
     console.log(`Score to beat blind: ${neededScore}`);
     // set variables
+    gameVars.currentDiscards = gameVars.maxDiscards;
+    gameVars.currentHands = gameVars.maxHands;
     gameVars.neededScore = neededScore;
     gameVars.gameState = 'inRound';
     gameVars.score = 0;

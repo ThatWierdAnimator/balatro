@@ -57,19 +57,16 @@ var handVars = {
     Joker Triggers:
 
     afterScore - Triggered after all cards are scored in a hand
-    duringScore - Triggered when each card is scored, if it has a condition attribute the condition is checks
+    duringScore - Triggered when each card is scored, if it has a condition attribute the condition is checked
     beforeScore - Triggered just before all cards are scored
     roundStart - Triggered when the round starts
     roundEnd - Triggered when the round ends
     onDiscard - Triggered when a discard happens
+    heldInHand - Triggered after beforeScore and before duringScore, meant for held in hand abilities
 
     Skipped Jokers:
-    Four Fingers
-    Mime
     Credit Card
     Ceremonial Dagger
-    Marble Joker
-    Raised Fist
     Choas the Clown
     Delayed Gratification
     Supernova
@@ -249,7 +246,7 @@ var allJokers = {
                 return 0; // the ranks are equal
             }).map(value => value);
 
-            if (tempHand.length === 5) {
+            if (tempHand.length === 5 || (jokers.includes(allJokers.fourFingers) && tempHand.length >= 4)) {
                 for (i = 1; i < tempHand.length; i++) {
                     if (tempHand[i].rank !== tempHand[i - 1].rank + 1) {
                         break;
@@ -267,7 +264,7 @@ var allJokers = {
         name: 'Droll Joker',
         trigger: 'afterScore',
         condition: () => {
-            if (playedHand.length === 5) {
+            if (playedHand.length === 5 || (jokers.includes(allJokers.fourFingers) && playedHand.length >= 4)) {
                 for (i = 1; i < playedHand.length; i++) {
                     if (playedHand[i].suit === playedHand[i - 1].suit) {
                         if (i === playedHand.length - 1) {
@@ -366,7 +363,7 @@ var allJokers = {
                 return 0; // the ranks are equal
             }).map(value => value);
 
-            if (tempHand.length === 5) {
+            if (tempHand.length === 5 || (jokers.includes(allJokers.fourFingers) && tempHand.length >= 4)) {
                 for (i = 1; i < tempHand.length; i++) {
                     if (tempHand[i].rank !== tempHand[i - 1].rank + 1) {
                         break;
@@ -384,7 +381,7 @@ var allJokers = {
         name: 'Crafty Joker',
         trigger: 'afterScore',
         condition: () => {
-            if (playedHand.length === 5) {
+            if (playedHand.length === 5 || (jokers.includes(allJokers.fourFingers) && playedHand.length >= 4)) {
                 for (i = 1; i < playedHand.length; i++) {
                     if (playedHand[i].suit === playedHand[i - 1].suit) {
                         if (i === playedHand.length - 1) {
@@ -428,6 +425,15 @@ var allJokers = {
             currentScore.mult *= count;
         }
     },
+    'fourFingers': {
+        name: 'Four Fingers'
+    },
+    'mime': {
+        name: 'Mime',
+        retriggering: true,
+        trigger: 'heldInHand',
+        effect: () => handleHeldCard(card, true)
+    },
     'banner': {
         name: 'Banner',
         trigger: 'afterScore',
@@ -438,6 +444,11 @@ var allJokers = {
         trigger: 'afterScore',
         condition: () => gameVars.currentDiscards === 0,
         effect: () => currentScore.mult += 15
+    },
+    'marbleJoker': {
+        name: 'Marble Joker',
+        trigger: 'roundStart',
+        effect: () => deck.push(new Card('rand', 'rand', 'stone'))
     },
     'loyaltyCard': {
         name: 'Loyalty Card',
@@ -473,6 +484,14 @@ var allJokers = {
         retriggering: true,
         condition: () => gameVars.currentHands === 0,
         effect: () => handleCard(card, true)
+    },
+    'raisedFist': {
+        name: 'Raised Fist',
+        trigger: 'heldInHand',
+        condition: () => card === hand.reduce((minCard, card) => card.rank < minCard.rank ? card : minCard),
+        effect: () => {
+            currentScore.mult += hand.reduce((minCard, card) => card.rank < minCard.rank ? card : minCard).rank * 2
+        }
     },
     'fibonacci': {
         name: 'Fibonacci',
@@ -520,6 +539,11 @@ var allJokers = {
         name: 'Abstract Joker',
         trigger: 'afterScore',
         effect: () => currentScore.mult += jokers.length * 3
+    },
+    'delayedGratification': {
+        name: 'Delayed Gratification',
+        trigger: 'roundEnd',
+        condition: () => gameVars.currentDiscards === gameVars.maxDiscards
     },
     'hack': {
         name: 'Hack',
