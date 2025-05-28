@@ -70,8 +70,6 @@ var handVars = {
     Choas the Clown
     Space Joker
     Egg
-    DNA
-    Blue Joker
     Sixth Sense
     Constellation
     Faceless Joker
@@ -672,6 +670,7 @@ var allJokers = {
         condition: () => gameVars.firstHand && playedHand.length === 1,
         effect: () => {
             deck.push(new Card(card.rank, card.suit, card.enhancement, card.seal, card.edition));
+            hand.push(deck[deck.length - 1]);
         }
     },
     'splash': {
@@ -681,6 +680,20 @@ var allJokers = {
             for (let card of playedHand) {
                 card.scoring = true;
             }
+        }
+    },
+    'blueJoker': {
+        name: 'Blue Joker',
+        trigger: 'afterScore',
+        effect: () => currentScore.chips += deck.filter(c => !c.dealt).length * 2
+    },
+    'sixthSense': {
+        name: 'Sixth Sense',
+        trigger: 'afterScore',
+        condition: () => playedHand.length === 1 && playedHand[0].rank === 6 && gameVars.firstHand,
+        effect: () => {
+            deck.splice(getCardIndex(playedHand[0].id), 1);
+            // create spectral card
         }
     },
     'hiker': {
@@ -1078,7 +1091,7 @@ var allJokers = {
                     if (playedHand[i].rank === playedHand[j].rank) {
                         count++;
                     }
-        
+
                     if (j === playedHand.length - 1 && count === 3) {
                         return 'four of a kind';
                     }

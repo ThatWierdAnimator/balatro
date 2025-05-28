@@ -35,7 +35,7 @@ var gameVars = {
 }
 
 let hand = [];
-var jokers = [allJokers.dna];
+var jokers = [];
 
 // returns the hand type as a string
 function getHandType(playedHand) {
@@ -384,7 +384,6 @@ function scoreHand(localHand) {
 
         // log chips, mult, and score to the console
         console.log(`Chips: ${currentScore.chips}\nMult: ${Number(currentScore.mult.toFixed(2))}\nScore: ${Math.round(currentScore.chips * currentScore.mult)}`);
-        console.log(deck);
 
         // the current score to the round score
         gameVars.score += currentScore.chips * currentScore.mult;
