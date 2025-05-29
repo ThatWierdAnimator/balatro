@@ -35,7 +35,7 @@ var gameVars = {
 }
 
 let hand = [];
-var jokers = [];
+var jokers = [allJokers.cardSharp];
 
 // returns the hand type as a string
 function getHandType(playedHand) {
@@ -323,7 +323,7 @@ function scoreHand(localHand) {
             hand.splice(hand.findIndex(c => c === card), 1);
         }
 
-        console.clear();
+        // console.clear();
 
         // remove a hand from play
         gameVars.currentHands--;
@@ -339,6 +339,11 @@ function scoreHand(localHand) {
             gameVars.playedHands[getHandType(playedHand)] = 0;
         }
         gameVars.playedHands[getHandType(playedHand)]++;
+
+        // if the hand is a secret hand, make it available for planets and such
+        if (!handVars[getHandType(playedHand)].available) {
+            handVars[getHandType(playedHand)].available = true;
+        }
 
         // sets gameVars.mostPlayedHand to the key that's value is equal to the highest number of hands played
         gameVars.mostPlayedHand = Object.keys(gameVars.playedHands).find(key => gameVars.playedHands[key] === Math.max(...Object.values(gameVars.playedHands)));
@@ -385,8 +390,12 @@ function scoreHand(localHand) {
         // log chips, mult, and score to the console
         console.log(`Chips: ${currentScore.chips}\nMult: ${Number(currentScore.mult.toFixed(2))}\nScore: ${Math.round(currentScore.chips * currentScore.mult)}`);
 
+        // let the game know that this is not the first hand
+        gameVars.firstHand = false;
+
         // the current score to the round score
         gameVars.score += currentScore.chips * currentScore.mult;
+
         // check if that's enough to beat the round
         if (gameVars.score >= gameVars.neededScore) {
             // remove the needed score and change the game state
@@ -404,14 +413,24 @@ function scoreHand(localHand) {
             for (card of hand) {
                 handleHeldCard(card);
             }
+
+            // reset all cards to undealt
+            for (card of deck) {
+                delete card.dealt;
+            }
+
+            // set the hand to empty and sort to update the html
+            hand = [];
+            sortHand(gameVars.preferredSort);
+
+            // run another round ***TEMPORARY***
+            runRound(300);
         } else {
             console.log(`Hands left: ${gameVars.currentHands}`);
             console.log(`Score to beat blind: ${gameVars.neededScore}\nCurrent score: ${Math.round(gameVars.score)}`);
             // otherwise deal another hand
             dealHand();
         }
-
-        gameVars.firstHand = false;
     } else {
         if (localHand.length > 0) {
             console.log('No hands remaining');
@@ -422,6 +441,9 @@ function scoreHand(localHand) {
 // discard the hand
 function discardHand(localHand) {
     if (gameVars.currentDiscards > 0 && localHand.length > 0) {
+        // make the localHand global so jokers can access it
+        playedHand = localHand;
+
         // trigger all onDiscard jokers
         for (let joker of jokers) {
             handleJoker(joker, 'onDiscard');

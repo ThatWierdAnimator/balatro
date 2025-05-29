@@ -1,55 +1,68 @@
 var handVars = {
     'flush five': {
         chips: 160,
-        mult: 16
+        mult: 16,
+        available: false
     },
     'flush house': {
         chips: 140,
-        mult: 14
+        mult: 14,
+        available: false
     },
     'five of a kind': {
         chips: 120,
-        mult: 12
+        mult: 12,
+        available: false
     },
     'royal flush': {
         chips: 100,
-        mult: 8
+        mult: 8,
+        available: true
     },
     'straight flush': {
         chips: 100,
-        mult: 8
+        mult: 8,
+        available: true
     },
     'four of a kind': {
         chips: 60,
-        mult: 7
+        mult: 7,
+        available: true
     },
     'full house': {
         chips: 40,
-        mult: 4
+        mult: 4,
+        available: true
     },
     'flush': {
         chips: 35,
-        mult: 4
+        mult: 4,
+        available: true
     },
     'straight': {
         chips: 30,
-        mult: 4
+        mult: 4,
+        available: true
     },
     'three of a kind': {
         chips: 30,
-        mult: 3
+        mult: 3,
+        available: true
     },
     'two pair': {
         chips: 20,
-        mult: 2
+        mult: 2,
+        available: true
     },
     'pair': {
         chips: 10,
-        mult: 2
+        mult: 2,
+        available: true
     },
     'high card': {
         chips: 5,
-        mult: 1
+        mult: 1,
+        available: true
     }
 }
 
@@ -70,13 +83,7 @@ var handVars = {
     Choas the Clown
     Space Joker
     Egg
-    Sixth Sense
     Constellation
-    Faceless Joker
-    Green Joker
-    To Do List
-    Cavendish
-    Card Sharp
     Red Card
     Madness
     Riff Raff
@@ -129,10 +136,11 @@ var handVars = {
 
     Unfinished Jokers:
     8 Ball
-    Gros Michel
     Superposition
     Séance
     Vagabond
+    Sixth Sense
+    Cavedish (should only appear in shop once michel is destroyed)
 
     Current Joker - The Duo
 */
@@ -553,15 +561,12 @@ var allJokers = {
     'grosMichel': {
         name: 'Gros Michel',
         trigger: 'afterScore',
-        effect: function () {
-            currentScore.mult += 15;
-
-            // this is triggered once the round ends
-
-            // if (Math.floor(Math.random() * 6) < 1 + gameVars.probabilitySkew) {
-            //     jokers.splice(jokers.findIndex(joker => joker === this), 1);
-            //     gameVars.michelDestroyed = true;
-            // }
+        effect: () => currentScore.mult += 15,
+        modifyTrigger: 'roundEnd',
+        modifyCondition: () => Math.floor(Math.random() * 6) < 1 + gameVars.probabilitySkew,
+        modifyEffect: function () {
+            jokers.splice(jokers.findIndex(joker => joker === this), 1);
+            gameVars.michelDestroyed = true;
         }
     },
     'evenSteven': {
@@ -693,7 +698,7 @@ var allJokers = {
         condition: () => playedHand.length === 1 && playedHand[0].rank === 6 && gameVars.firstHand,
         effect: () => {
             deck.splice(getCardIndex(playedHand[0].id), 1);
-            // create spectral card
+            console.log('Spectral generated!');
         }
     },
     'hiker': {
@@ -707,6 +712,27 @@ var allJokers = {
             card.bonusChips += 5;
         }
     },
+    'facelessJoker': {
+        name: 'Faceless Joker',
+        trigger: 'onDiscard',
+        condition: () => playedHand.filter(c => c.rank >= 11 && c.rank <= 13).length >= 3,
+        effect: () => gameVars.money += 3
+    },
+    'greenJoker': {
+        name: 'Green Joker',
+        trigger: 'afterScore',
+        effect: () => {
+            if (!('greenJokerMult' in gameVars)) {
+                gameVars.greenJokerMult = 0;
+            }
+            gameVars.greenJokerMult++;
+
+            currentScore.mult += gameVars.greenJokerMult;
+        },
+        modifyTrigger: 'onDiscard',
+        modifyCondition: () => 'greenJokerMult' in gameVars && gameVars.greenJokerMult > 0,
+        modifyEffect: () => gameVars.greenJokerMult--
+    },
     'superposition': {
         name: 'Superposition',
         trigger: 'beforeScore',
@@ -716,6 +742,58 @@ var allJokers = {
             }
         },
         effect: () => console.log('Tarot generated!')
+    },
+    'toDoList': {
+        name: 'To Do List',
+        trigger: 'afterScore',
+        condition: () => {
+            if (!('toDoTarget' in gameVars)) {
+                while (true) {
+                    let randomHandType = Object.keys(handVars)[Math.floor(Math.random() * Object.keys(handVars).length)];
+                    if (handVars[randomHandType].available) {
+                        gameVars.toDoTarget = randomHandType;
+                        break;
+                    }
+                }
+            }
+
+            return getHandType(playedHand) === gameVars.toDoTarget;
+        },
+        effect: () => gameVars.money += 5,
+        modifyTrigger: 'roundEnd',
+        modifyEffect: () => {
+            while (true) {
+                let randomHandType = Object.keys(handVars)[Math.floor(Math.random() * Object.keys(handVars).length)];
+                if (handVars[randomHandType].available) {
+                    gameVars.toDoTarget = randomHandType;
+                    break;
+                }
+            }
+        }
+    },
+    'cavendish': {
+        name: 'Cavendish',
+        trigger: 'afterScore',
+        effect: () => currentScore.mult *= 3,
+        modifyCondition: () => Math.floor(Math.random() * 1000) < 1 + gameVars.probabilitySkew,
+        modifyEffect: function () {
+            jokers.splice(jokers.findIndex(joker => joker === this), 1);
+            gameVars.michelDestroyed = true;
+        }
+    },
+    'cardSharp': {
+        name: 'Card Sharp',
+        trigger: 'afterScore',
+        condition: () => {
+            if (getHandType(playedHand) in gameVars.startOfRoundPlayedHands) {
+                return gameVars.playedHands[getHandType(playedHand)] > gameVars.startOfRoundPlayedHands[getHandType(playedHand)] + 1
+            } else {
+                return gameVars.playedHands[getHandType(playedHand)] > 1
+            }
+        },
+        effect: () => currentScore.mult *= 3,
+        modifyTrigger: 'roundStart',
+        modifyEffect: () => gameVars.startOfRoundPlayedHands = { ...gameVars.playedHands }
     },
     'squareJoker': {
         name: 'Square Joker',
