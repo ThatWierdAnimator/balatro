@@ -35,8 +35,8 @@ var gameVars = {
     playedHands: {}
 }
 
-let hand = [new Card(13, 'hearts')];
-var jokers = [allJokers.baron];
+let hand = [];
+var jokers = [];
 
 // returns the hand type as a string
 function getHandType(playedHand) {
@@ -325,6 +325,7 @@ function scoreHand(localHand) {
             hand.splice(hand.findIndex(c => c === card), 1);
         }
 
+        // clear console (duh)
         console.clear();
 
         // remove a hand from play
@@ -426,7 +427,7 @@ function scoreHand(localHand) {
             sortHand(gameVars.preferredSort);
 
             // run another round ***TEMPORARY***
-            runRound(300);
+            runRound(1);
         } else {
             console.log(`Hands left: ${gameVars.currentHands}`);
             console.log(`Score to beat blind: ${gameVars.neededScore}\nCurrent score: ${Math.round(gameVars.score)}`);
@@ -786,8 +787,8 @@ function runRound(neededScore) {
         handleJoker(joker, 'roundStart');
     }
 
-    console.log(`Hands left: ${gameVars.currentHands}`);
-    console.log(`Discards left: ${gameVars.currentDiscards}`);
+    console.log(`Hands left: ${gameVars.maxHands}`);
+    console.log(`Discards left: ${gameVars.maxDiscards}`);
     console.log(`Score to beat blind: ${neededScore}`);
     // set variables
     gameVars.firstHand = true;

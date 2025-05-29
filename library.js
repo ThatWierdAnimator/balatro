@@ -87,26 +87,16 @@ var handVars = {
     Red Card
     Riff Raff
     Hologram
-    Cloud 9
     Rocket
     Luchador
     Gift Card
-    Turtle Bean
-    Reserved Parking
-    Mail-In Rebate
     To the Moon
     Hallucination
     Fortune Teller
-    Juggler
-    Drunkard
-    Golden Joker
     Baseball Card
     Diet Cola
     Trading Card
     Flash Card
-    Popcorn
-    Ancient Joker
-    Ramen
     Castle
     Campfire
     Mr. Bones
@@ -871,6 +861,12 @@ var allJokers = {
         condition: () => card.rank === 13,
         effect: () => currentScore.mult *= 1.5
     },
+    'cloud9': {
+        name: 'Cloud 9',
+        trigger: 'roundEnd',
+        condition: () => deck.filter(c => c.rank === 9 && c.enhancement !== 'stone').length > 0,
+        effect: () => gameVars.money += deck.filter(c => c.rank === 9 && c.enhancement !== 'stone').length
+    },
     'obelisk': {
         name: 'Obelisk',
         trigger: 'afterScore',
@@ -926,11 +922,54 @@ var allJokers = {
             delete gameVars.firstPlayedFaceCardPos;
         }
     },
+    'turtleBean': {
+        name: 'Turtle Bean',
+        trigger: 'roundStart',
+        effect: () => {
+            if (!('turtleBeanHandSize' in gameVars)) {
+                gameVars.turtleBeanHandSize = 5;
+            }
+            gameVars.handSize += gameVars.turtleBeanHandSize;
+        },
+        modifyTrigger: 'roundEnd',
+        modifyEffect: () => {
+            gameVars.handSize -= gameVars.turtleBeanHandSize;
+            gameVars.turtleBeanHandSize--;
+        }
+    },
     'erosion': {
         name: 'Erosion',
         trigger: 'afterScore',
         condition: () => deck.length < 52,
         effect: () => currentScore.mult += (52 - deck.length) * 4
+    },
+    'reservedParking': {
+        name: 'Reserved Parking',
+        trigger: 'heldInHand',
+        condition: () => ((card.rank <= 13 && card.rank >= 11) || jokers.includes(allJokers.pareidolia)) && Math.floor(Math.random() * 2) < 1 + gameVars.probabilitySkew,
+        effect: () => gameVars.money += 1
+    },
+    'mailInRebate': {
+        name: 'Mail-In Rebate',
+        trigger: 'onDiscard',
+        condition: () => playedHand.filter(c => c.rank === gameVars.mailInRank).length > 0,
+        effect: () => gameVars.money += playedHand.filter(c => c.rank === gameVars.mailInRank).length * 3,
+        modifyTrigger: 'roundStart',
+        modifyEffect: () => gameVars.mailInRank = Math.floor(Math.random() * 13) + 2
+    },
+    'juggler': {
+        name: 'Juggler',
+        trigger: 'roundStart',
+        effect: () => gameVars.handSize++,
+        modifyTrigger: 'roundEnd',
+        modifyEffect: () => gameVars.handSize--
+    },
+    'drunkard': {
+        name: 'Drunkard',
+        trigger: 'roundStart',
+        effect: () => gameVars.maxDiscards++,
+        modifyTrigger: 'roundEnd',
+        modifyEffect: () => gameVars.maxDiscards--
     },
     'stoneJoker': {
         name: 'Stone Joker',
@@ -938,11 +977,42 @@ var allJokers = {
         condition: () => deck.find(c => c.enhancement === 'stone') !== undefined,
         effect: () => currentScore.chips += deck.filter(c => c.enhancement === 'stone').length * 25
     },
+    'goldenJoker': {
+        name: 'Golden Joker',
+        trigger: 'roundEnd',
+        effect: () => gameVars.money += 4
+    },
     'luckyCat': {
         name: 'Lucky Cat',
         trigger: 'afterScore',
         condition: () => 'luckyHits' in gameVars && gameVars.luckyHits > 0,
         effect: () => currentScore.mult *= gameVars.luckyHits * 0.25 + 1
+    },
+    'tradingCard': {
+        name: 'Trading Card',
+        trigger: 'onDiscard',
+        condition: () => gameVars.firstDiscard && playedHand.length === 1,
+        effect: () => {
+            gameVars.money += 3;
+            deck.splice(getCardIndex(playedHand[0].id), 1);
+        }
+    },
+    'popcorn': {
+        name: 'Popcorn',
+        trigger: 'afterScore',
+        effect: () => {
+            if (!('popcornMult' in gameVars)) {
+                gameVars.popcornMult = 20;
+            }
+            currentScore.mult += gameVars.popcornMult;
+        },
+        modifyTrigger: 'roundEnd',
+        modifyEffect: function () {
+            gameVars.popcornMult -= 4;
+            if (gameVars.popcornMult <= 0) {
+                jokers.splice(jokers.findIndex(j => j === this), 1);
+            }
+        }
     },
     'bull': {
         name: 'Bull',
@@ -982,6 +1052,35 @@ var allJokers = {
             }
 
             gameVars.trousersMult += 2;
+        }
+    },
+    'ancientJoker': {
+        name: 'Ancient Joker',
+        trigger: 'duringScore',
+        condition: () => card.suit === gameVars.ancientJokerSuit,
+        effect: () => currentScore.mult *= 1.5,
+        modifyTrigger: 'roundStart',
+        modifyEffect: () => gameVars.ancientJokerSuit = allSuits[Math.floor(Math.random() * allSuits.length)]
+    },
+    'ramen': {
+        name: 'Ramen',
+        trigger: 'afterScore',
+        effect: () => {
+            if (!('ramenMult' in gameVars)) {
+                gameVars.ramenMult = 2;
+            }
+            currentScore.mult *= gameVars.ramenMult;
+        },
+        modifyTrigger: 'onDiscard',
+        modifyEffect: function () {
+            if (!('ramenMult' in gameVars)) {
+                gameVars.ramenMult = 2;
+            }
+            gameVars.ramenMult -= playedHand.length / 100;
+
+            if (gameVars.ramenMult <= 1) {
+                jokers.splice(jokers.findIndex(j => j === this), 1);
+            }
         }
     },
     'walkieTalkie': {
@@ -1254,7 +1353,7 @@ var allJokers = {
 }
 
 // see how many jokers are in there
-// console.log(`${Object.keys(allJokers).length} jokers added!\n${Number((Object.keys(allJokers).length/150).toFixed(3))*100}% complete!`)
+// console.log(`${Object.keys(allJokers).length} jokers added!\n${Number((Object.keys(allJokers).length / 150).toFixed(3)) * 100}% complete!`)
 
 var cardsSpawned = 0;
 var allSuits = ['spades', 'hearts', 'clubs', 'diamonds'];
