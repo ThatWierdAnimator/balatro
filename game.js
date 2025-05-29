@@ -28,14 +28,15 @@ var gameVars = {
     handSize: 8,
     money: 4,
     probabilitySkew: 0,
+    straightGap: 0,
     preferredSort: 'rank',
     gameState: 'none',
     score: 0,
     playedHands: {}
 }
 
-let hand = [];
-var jokers = [allJokers.cardSharp];
+let hand = [new Card(13, 'hearts')];
+var jokers = [allJokers.baron];
 
 // returns the hand type as a string
 function getHandType(playedHand) {
@@ -145,6 +146,7 @@ function getHandType(playedHand) {
         }
     }
 
+    // only straight flush is effected by four fingers so it gets it's own if statement
     if (tempHand.length === 5 || (jokers.includes(allJokers.fourFingers) && playedHand.length >= 4)) {
         // check for straight flush
         for (i = 1; i < tempHand.length; i++) {
@@ -154,7 +156,7 @@ function getHandType(playedHand) {
                     card.scoring = true;
                 }
                 return 'straight flush';
-            } else if (tempHand[i].suit !== tempHand[i - 1].suit || tempHand[i].rank !== tempHand[i - 1].rank + 1) {
+            } else if (tempHand[i].suit !== tempHand[i - 1].suit || !(tempHand[i].rank >= tempHand[i - 1].rank + 1 && tempHand[i].rank <= tempHand[i - 1].rank + 1 + gameVars.straightGap)) {
                 break;
             } else if (i === tempHand.length - 1 && tempHand[tempHand.length - 1].rank === 14) {
                 // if the highest card is an ace the hand is a royale flush
@@ -257,7 +259,7 @@ function getHandType(playedHand) {
                     card.scoring = true;
                 }
                 return 'flush';
-            } else if (tempHand[i].rank !== tempHand[i - 1].rank + 1) {
+            } else if (!(tempHand[i].rank >= tempHand[i - 1].rank + 1 && tempHand[i].rank <= tempHand[i - 1].rank + 1 + gameVars.straightGap)) {
                 break;
             } else if (i === tempHand.length - 1) {
                 // every card scores in a straight
@@ -323,7 +325,7 @@ function scoreHand(localHand) {
             hand.splice(hand.findIndex(c => c === card), 1);
         }
 
-        // console.clear();
+        console.clear();
 
         // remove a hand from play
         gameVars.currentHands--;

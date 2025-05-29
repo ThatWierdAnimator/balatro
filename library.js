@@ -85,11 +85,8 @@ var handVars = {
     Egg
     Constellation
     Red Card
-    Madness
     Riff Raff
-    Shortcut
     Hologram
-    Baron
     Cloud 9
     Rocket
     Luchador
@@ -141,6 +138,7 @@ var handVars = {
     Vagabond
     Sixth Sense
     Cavedish (should only appear in shop once michel is destroyed)
+    Madness (don't do stuff on boss blind)
 
     Current Joker - The Duo
 */
@@ -795,6 +793,24 @@ var allJokers = {
         modifyTrigger: 'roundStart',
         modifyEffect: () => gameVars.startOfRoundPlayedHands = { ...gameVars.playedHands }
     },
+    'madness': {
+        name: 'Madness',
+        trigger: 'afterScore',
+        effect: () => currentScore.mult *= gameVars.madnessMult,
+        modifyTrigger: 'roundStart',
+        modifyEffect: () => {
+            if (!('madnessMult' in gameVars)) {
+                gameVars.madnessMult = 1;
+            }
+            gameVars.madnessMult += 0.5;
+
+            // check if madness is the only joker
+            if (jokers.filter(j => j !== allJokers.madness).length > 1) {
+                // deletes a random joker that isn't madness
+                jokers.splice(jokers.findIndex(j => j === jokers.filter(j => j !== allJokers.madness)[Math.random() * jokers.filter(j => j !== allJokers.madness).length]), 1);
+            }
+        }
+    },
     'squareJoker': {
         name: 'Square Joker',
         trigger: 'afterScore',
@@ -838,11 +854,22 @@ var allJokers = {
             }
         }
     },
+    'shortCut': {
+        name: 'Shortcut',
+        trigger: 'roundStart',
+        effect: () => gameVars.straightGap = 1
+    },
     'vagabond': {
         name: 'Vagabond',
         trigger: 'beforeScore',
         condition: () => gameVars.money <= 4,
         effect: () => console.log('Tarot generated!')
+    },
+    'baron': {
+        name: 'Baron',
+        trigger: 'heldInHand',
+        condition: () => card.rank === 13,
+        effect: () => currentScore.mult *= 1.5
     },
     'obelisk': {
         name: 'Obelisk',
