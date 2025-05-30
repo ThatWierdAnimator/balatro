@@ -95,17 +95,11 @@ var handVars = {
     Fortune Teller
     Baseball Card
     Diet Cola
-    Trading Card
     Flash Card
-    Castle
     Campfire
-    Mr. Bones
     Swashbuckler
-    Troubadour
-    Certificate
     Throwback
     Showman
-    Merry Andy
     The Idol
     Matador
     Hit the Road
@@ -129,8 +123,9 @@ var handVars = {
     Sixth Sense
     Cavedish (should only appear in shop once michel is destroyed)
     Madness (don't do stuff on boss blind)
+    Castle (change the modify system (can't be bothered))
 
-    Current Joker - The Duo
+    Current Joker - The Idol
 */
 var allJokers = {
     'joker': {
@@ -1113,6 +1108,34 @@ var allJokers = {
             }
         }
     },
+    'castle': {
+        name: 'Castle',
+        trigger: 'afterScore',
+        effect: () => {
+            if (!('castleChips' in gameVars)) {
+                gameVars.castleChips = 0;
+            }
+
+            currentScore.chips += gameVars.castleChips;
+        },
+        modifyTrigger: 'onDiscard',
+        modifyCondition: () => {
+            if (gameVars.firstDiscard) {
+                gameVars.castleSuit = allSuits[Math.floor(Math.random() * allSuits.length)];
+            }
+
+            if (playedHand.filter(c => c.suit === gameVars.castleSuit).length > 0) {
+                return true;
+            }
+        },
+        modifyEffect: () => {
+            if (!('castleChips' in gameVars)) {
+                gameVars.castleChips = 0;
+            }
+
+            gameVars.castleChips += playedHand.filter(c => c.suit === gameVars.castleSuit).length * 3;
+        }
+    },
     'smileyFace': {
         name: 'Smiley Face',
         trigger: 'duringScore',
@@ -1124,6 +1147,9 @@ var allJokers = {
         trigger: 'duringScore',
         condition: () => card.enhancement === 'gold',
         effect: () => gameVars.money += 4
+    },
+    'mrBones': {
+        name: 'Mr. Bones'
     },
     'acrobat': {
         name: 'Acrobat',
@@ -1137,6 +1163,27 @@ var allJokers = {
         trigger: 'duringScore',
         condition: () => jokers.includes(allJokers.pareidolia) || (card.rank <= 13 && card.rank >= 11),
         effect: () => handleCard(card, true)
+    },
+    'troubadour': {
+        name: 'Troubadour',
+        trigger: 'roundStart',
+        effect: () => {
+            gameVars.handSize += 2;
+            gameVars.maxHands--;
+        },
+        modifyTrigger: 'roundEnd',
+        modifyEffect: () => {
+            gameVars.handSize -= 2;
+            gameVars.maxHands++;
+        }
+    },
+    'certificate': {
+        name: 'Certificate',
+        trigger: 'roundStart',
+        effect: () => {
+            deck.push(new Card('rand', 'rand', 'none', 'rand'));
+            hand.push(deck[deck.length - 1]);
+        }
     },
     'smearedJoker': {
         name: 'Smeared Joker'
@@ -1239,6 +1286,19 @@ var allJokers = {
             }
 
             gameVars.weeChips += 8;
+        }
+    },
+    'merryAndy': {
+        name: 'Merry Andy',
+        trigger: 'roundStart',
+        effect: () => {
+            gameVars.maxDiscards += 3;
+            gameVars.handSize--;
+        },
+        modifyTrigger: 'roundEnd',
+        modifyEffect: () => {
+            gameVars.maxDiscards -= 3;
+            gameVars.handSize++;
         }
     },
     'oopsAllSixes': {

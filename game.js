@@ -427,8 +427,16 @@ function scoreHand(localHand) {
             sortHand(gameVars.preferredSort);
 
             // run another round ***TEMPORARY***
-            runRound(1);
-        } else {
+            runRound(300);
+        } else if (gameVars.currentHands === 0) {
+            if (jokers.includes(allJokers.mrBones)) {
+                jokers.splice(jokers.findIndex(j => j === allJokers.mrBones), 1);
+                console.log('Saved by Mr. Bones');
+            } else {
+                console.log(`You lost, nerd!`);
+            }
+        }
+        else {
             console.log(`Hands left: ${gameVars.currentHands}`);
             console.log(`Score to beat blind: ${gameVars.neededScore}\nCurrent score: ${Math.round(gameVars.score)}`);
             // otherwise deal another hand
