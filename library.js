@@ -1,69 +1,220 @@
 var handVars = {
     'flush five': {
+        name: 'flush five',
         chips: 160,
         mult: 16,
         available: false
     },
     'flush house': {
+        name: 'flush house',
         chips: 140,
         mult: 14,
         available: false
     },
     'five of a kind': {
+        name: 'five of a kind',
         chips: 120,
         mult: 12,
         available: false
     },
     'royal flush': {
+        name: 'royal flush',
         chips: 100,
         mult: 8,
         available: true
     },
     'straight flush': {
+        name: 'straight flush',
         chips: 100,
         mult: 8,
         available: true
     },
     'four of a kind': {
+        name: 'four of a kind',
         chips: 60,
         mult: 7,
         available: true
     },
     'full house': {
+        name: 'full house',
         chips: 40,
         mult: 4,
         available: true
     },
     'flush': {
+        name: 'flush',
         chips: 35,
         mult: 4,
         available: true
     },
     'straight': {
+        name: 'straight',
         chips: 30,
         mult: 4,
         available: true
     },
     'three of a kind': {
+        name: 'three of a kind',
         chips: 30,
         mult: 3,
         available: true
     },
     'two pair': {
+        name: 'two pair',
         chips: 20,
         mult: 2,
         available: true
     },
     'pair': {
+        name: 'pair',
         chips: 10,
         mult: 2,
         available: true
     },
     'high card': {
+        name: 'high card',
         chips: 5,
         mult: 1,
         available: true
     }
+}
+
+var planetCards = {
+    'mercury': {
+        name: 'Mercury',
+        type: 'planet',
+        hand: 'pair',
+        chips: 15,
+        mult: 1
+    },
+    'venus': {
+        name: 'Venus',
+        type: 'planet',
+        hand: 'three of a kind',
+        chips: 20,
+        mult: 2
+    },
+    'earth': {
+        name: 'Earth',
+        type: 'planet',
+        hand: 'full house',
+        chips: 25,
+        mult: 2
+    },
+    'mars': {
+        name: 'Mars',
+        type: 'planet',
+        hand: 'four of a kind',
+        chips: 30,
+        mult: 3
+    },
+    'jupiter': {
+        name: 'Jupiter',
+        type: 'planet',
+        hand: 'flush',
+        chips: 15,
+        mult: 2
+    },
+    'saturn': {
+        name: 'Saturn',
+        type: 'planet',
+        hand: 'straight',
+        chips: 30,
+        mult: 3
+    },
+    'uranus': {
+        name: 'Uranus',
+        type: 'planet',
+        hand: 'two pair',
+        chips: 20,
+        mult: 1
+    },
+    'neptune': {
+        name: 'Neptune',
+        type: 'planet',
+        hand: 'straight flush',
+        chips: 40,
+        mult: 4
+    },
+    'pluto': {
+        name: 'Pluto',
+        type: 'planet',
+        hand: 'high card',
+        chips: 15,
+        mult: 1
+    },
+    'planetX': {
+        name: 'Planet X',
+        type: 'planet',
+        hand: 'five of a kind',
+        chips: 35,
+        mult: 3
+    },
+    'ceres': {
+        name: 'Ceres',
+        type: 'planet',
+        hand: 'flush house',
+        chips: 40,
+        mult: 4
+    },
+    'eris': {
+        name: 'Eris',
+        type: 'planet',
+        hand: 'flush five',
+        chips: 50,
+        mult: 3
+    }
+}
+
+var tarotCards = {
+    'magician': {
+        name: 'The Magician',
+        type: 'tarot',
+        condition: () => hand.filter(c => c.selected).length > 0 && hand.filter(c => c.selected).length <= 2,
+        effect: () => {
+            for (card of hand.filter(c => c.selected)) {
+                card.enhancement = 'lucky';
+            }
+        }
+    },
+    'highPriestess': {
+        name: 'The High Priestess',
+        type: 'tarot',
+        effect: () => {
+            for (i = 0; i < 2; i++) {
+                // it works trust me
+                consumables.push({ ...Object.values(planetCards).filter(p => p.hand === Object.values(handVars).filter(h => h.available && h.name !== 'royal flush')[Math.floor(Math.random() * Object.values(handVars).filter(h => h.available && h.name !== 'royal flush').length)].name)[0] });
+
+                // if there are duplicates and no showman remove the duplicate
+                // also if the planet is undefined remove it
+                if ((deepEqual(consumables[consumables.length - 2], consumables[consumables.length - 1]) && !jokers.includes(j => j === allJokers.showman)) || Object.keys(consumables[consumables.length - 1]).length === 0) {
+                    consumables.pop();
+                    i--;
+                }
+            }
+        }
+    }
+}
+
+// if two objects are deeply equal, return true
+function deepEqual(obj1, obj2) {
+    if (obj1 === obj2) {
+        return true;
+    }
+    if (typeof obj1 !== 'object' || obj1 === null || typeof obj2 !== 'object' || obj2 === null) {
+        return false;
+    }
+    const keys1 = Object.keys(obj1);
+    const keys2 = Object.keys(obj2);
+    if (keys1.length !== keys2.length) {
+        return false;
+    }
+    for (let key of keys1) {
+        if (!obj2.hasOwnProperty(key) || !deepEqual(obj1[key], obj2[key])) {
+            return false;
+        }
+    }
+    return true;
 }
 
 /* 
@@ -100,18 +251,13 @@ var handVars = {
     Swashbuckler
     Throwback
     Showman
-    The Idol
     Matador
-    Hit the Road
-    Stuntman
     Invisible Joker
     Satellite
-    Shoot the Moon
     Cartomancer
     Astronomer
     Burnt Joker
     Canio
-    Yorick
     Chicot
     Perkeo
 
@@ -123,9 +269,8 @@ var handVars = {
     Sixth Sense
     Cavedish (should only appear in shop once michel is destroyed)
     Madness (don't do stuff on boss blind)
-    Castle (change the modify system (can't be bothered))
 
-    Current Joker - The Idol
+    Current Joker - 
 */
 var allJokers = {
     'joker': {
@@ -1118,23 +1263,15 @@ var allJokers = {
 
             currentScore.chips += gameVars.castleChips;
         },
-        modifyTrigger: 'onDiscard',
-        modifyCondition: () => {
-            if (gameVars.firstDiscard) {
-                gameVars.castleSuit = allSuits[Math.floor(Math.random() * allSuits.length)];
-            }
-
-            if (playedHand.filter(c => c.suit === gameVars.castleSuit).length > 0) {
-                return true;
-            }
-        },
-        modifyEffect: () => {
+        modifyTriggers: ['onDiscard', 'roundStart'],
+        modifyConditions: [() => playedHand.filter(c => c.suit === gameVars.castleSuit).length > 0],
+        modifyEffects: [() => {
             if (!('castleChips' in gameVars)) {
                 gameVars.castleChips = 0;
             }
 
             gameVars.castleChips += playedHand.filter(c => c.suit === gameVars.castleSuit).length * 3;
-        }
+        }, () => gameVars.castleSuit = allSuits[Math.floor(Math.random() * allSuits.length)]]
     },
     'smileyFace': {
         name: 'Smiley Face',
@@ -1306,11 +1443,32 @@ var allJokers = {
         trigger: 'beforeScore',
         effect: () => gameVars.probabilitySkew = jokers.filter(j => j === allJokers.oopsAllSixes).length
     },
+    'theIdol': {
+        name: 'The Idol',
+        trigger: 'duringScore',
+        condition: () => card.rank === gameVars.idolCard.rank && card.suit === gameVars.idolCard.suit,
+        effect: () => currentScore.mult *= 2,
+        modifyTrigger: 'roundStart',
+        modifyEffect: () => {
+            let randomCard = deck[Math.floor(Math.random() * deck.length)];
+            gameVars.idolCard = {};
+            gameVars.idolCard.rank = randomCard.rank;
+            gameVars.idolCard.suit = randomCard.suit;
+        }
+    },
     'seeingDouble': {
         name: 'Seeing Double',
         trigger: 'afterScore',
         condition: () => playedHand.some(card => card.suit === 'clubs' && card.scoring) && playedHand.some(card => card.suit !== 'clubs' && card.scoring),
         effect: () => currentScore.mult *= 2
+    },
+    'hitTheRoad': {
+        name: 'hitTheRoad',
+        trigger: 'afterScore',
+        effect: () => currentScore.mult *= gameVars.hitTheRoadMult,
+        modifyTriggers: ['roundStart', 'onDiscard'],
+        modifyConditions: [() => true, () => playedHand.filter(c => c.rank === 11).length > 0],
+        modifyEffects: [() => gameVars.hitTheRoadMult = 1, () => gameVars.hitTheRoadMult += playedHand.filter(c => c.rank === 11).length * 0.5]
     },
     'theDuo': {
         name: 'The Duo',
@@ -1376,6 +1534,13 @@ var allJokers = {
         condition: () => getHandType(playedHand) === 'flush' || getHandType(playedHand) === 'straight flush' || getHandType(playedHand) === 'royal flush' || getHandType(playedHand) === 'flush five' || getHandType(playedHand) === 'flush house',
         effect: () => currentScore.mult *= 2
     },
+    'stuntman': {
+        name: 'Stuntman',
+        trigger: 'afterScore',
+        effect: () => currentScore.chips += 250,
+        modifyTriggers: ['roundStart', 'roundEnd'],
+        modifyEffects: [() => gameVars.handSize -= 2, () => gameVars.handSize += 2]
+    },
     'brainstorm': {
         name: 'Blueprint',
         modifyTrigger: 'beforeScore',
@@ -1391,6 +1556,12 @@ var allJokers = {
                 this.effect = jokers[0].effect;
             }
         }
+    },
+    'shootTheMoon': {
+        name: 'Shoot the Moon',
+        trigger: 'heldInHand',
+        condition: () => card.rank === 12,
+        effect: () => currentScore.mult += 13
     },
     'driversLiscense': {
         name: 'Drivers Liscense',
@@ -1409,6 +1580,25 @@ var allJokers = {
         trigger: 'duringScore',
         condition: () => card.rank === 12 || card.rank === 13,
         effect: () => currentScore.mult *= 2
+    },
+    'yorick': {
+        name: 'Yorick',
+        trigger: 'afterScore',
+        condition: () => 'yorickMult' in gameVars && gameVars.yorickMult > 1,
+        effect: () => currentScore.mult *= gameVars.yorickMult,
+        countDown: 23,
+        modifyTrigger: 'onDiscard',
+        modifyEffect: function () {
+            if (!('yorickMult' in gameVars)) {
+                gameVars.yorickMult = 1;
+            }
+
+            this.countDown -= playedHand.length;
+            if (this.countDown <= 0) {
+                gameVars.yorickMult++;
+                this.countDown += 23;
+            }
+        }
     }
 }
 
@@ -1515,5 +1705,5 @@ var deck = [
     new Card(11, 'diamonds'),
     new Card(12, 'diamonds'),
     new Card(13, 'diamonds'),
-    new Card(14, 'diamonds'),
+    new Card(14, 'diamonds')
 ]

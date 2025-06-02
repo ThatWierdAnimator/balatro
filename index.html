@@ -9,10 +9,12 @@
     <link rel="stylesheet" href="balatro.css">
 </head>
 <body>
+    <div id="consumable-container" class="consumable-container"></div>
     <div id="card-container" class="card-container"></div>
     <button onclick="sortHand('rank')">Rank</button>
     <button onclick="sortHand('suit')">Suit</button>
     <button id="submitHand" onclick="scoreHand(hand.filter(c => c.selected))">Ship it!</button>
     <button id="discardHand" onclick="discardHand(hand.filter(c => c.selected))">Toss it</button>
+    <button id="use-consumable" onclick="useConsumable(consumables.filter(c => c.selected)[0])">Use consumable</button>
 </body>
 </html>

@@ -15,7 +15,8 @@
         edition: 'polychrome'
     }
 */
-const displayHand = document.getElementById('card-container')
+const displayHand = document.getElementById('card-container');
+const displayConsumables = document.getElementById('consumable-container');
 
 var gameVars = {
     maxJokers: 5,
@@ -32,10 +33,12 @@ var gameVars = {
     preferredSort: 'rank',
     gameState: 'none',
     score: 0,
-    playedHands: {}
+    playedHands: {},
+    handLevels: {}
 }
 
 let hand = [];
+let consumables = [{ ...tarotCards.highPriestess }];
 var jokers = [];
 
 // returns the hand type as a string
@@ -335,7 +338,13 @@ function scoreHand(localHand) {
         playedHand = localHand;
         // get the hand's score from the score library
         currentScore = { ...handVars[getHandType(playedHand)] };
-        console.log(getHandType(playedHand));
+        console.log(`Level ${gameVars.handLevels[getHandType(playedHand)] ? gameVars.handLevels[getHandType(playedHand)] : 1} ${getHandType(playedHand)}`);
+
+        // add levels to the hand's score
+        if (gameVars.handLevels[getHandType(playedHand)] > 1) {
+            currentScore.chips += Object.values(planetCards).find(c => c.hand === getHandType(playedHand)).chips * (gameVars.handLevels[getHandType(playedHand)] - 1);
+            currentScore.mult += Object.values(planetCards).find(c => c.hand === getHandType(playedHand)).mult * (gameVars.handLevels[getHandType(playedHand)] - 1);
+        }
 
         // log the played hand to gameVars
         if (!(getHandType(playedHand) in gameVars.playedHands)) {
@@ -406,12 +415,12 @@ function scoreHand(localHand) {
             gameVars.gameState = 'roundEnd';
             console.log(`Ending score: ${Math.round(gameVars.score)}`)
             console.log('win!!! yey!!1!!!');
-            
+
             // run all jokers that are at the end of round
             for (let joker of jokers) {
                 handleJoker(joker, 'roundEnd');
             }
-            
+
             // run all round ending held in hand abilities
             for (card of hand) {
                 handleHeldCard(card);
@@ -494,6 +503,20 @@ function handleJoker(joker, trigger) {
                 }
             } else {
                 joker.modifyEffect();
+            }
+        }
+    }
+
+    if ('modifyTriggers' in joker) {
+        for (i = 0; i < joker.modifyTriggers.length; i++) {
+            if (joker.modifyTriggers[i] === trigger) {
+                if ('modifyConditions' in joker && joker.modifyConditions[i]) {
+                    if (joker.modifyConditions[i]()) {
+                        joker.modifyEffects[i]();
+                    }
+                } else {
+                    joker.modifyEffects[i]();
+                }
             }
         }
     }
@@ -788,6 +811,68 @@ function sortHand(type) {
     }
 }
 
+// updates the display of the consumable container
+function updateConsumables() {
+    // reset the inner html
+    displayConsumables.innerHTML = '';
+
+    // add all consumables to display consumables
+    for (i = 0; i < consumables.length; i++) {
+        let template = '';
+        if (consumables[i].selected) {
+            template = `<button class="consumable selected"`
+        } else {
+            template = `<button class="consumable"`
+        }
+        template += `id="consumable-${i}" onclick="function toggleSelectSelf() {
+            if (consumables.filter(c => c.selected).length < 1 && !consumables[${i}].selected) {
+                document.getElementById('consumable-${i}').classList.add('selected');
+                consumables[${i}].selected = true;
+            } else if (consumables[${i}].selected) {
+                document.getElementById('consumable-${i}').classList.remove('selected');
+                consumables[${i}].selected = false;
+            }
+        } toggleSelectSelf()"><p>${consumables[i].name}</p></button>`;
+
+        displayConsumables.innerHTML += template;
+    }
+}
+
+function useConsumable(consumable) {
+    // if the card is a planet run, level up it's hand type
+    if (consumable.type === 'planet') {
+        if (!(consumable.hand in gameVars.handLevels)) {
+            gameVars.handLevels[consumable.hand] = 1;
+        }
+        gameVars.handLevels[consumable.hand] += 1;
+        console.log(`${consumable.hand} level up!\nCurrent ${consumable.hand} level: ${gameVars.handLevels[consumable.hand]}`);
+
+        // remove the planet from consumables
+        consumables.splice(consumables.findIndex(c => c === consumable), 1);
+    }
+
+    // if the card is a tarot, check for condition and apply effect
+    if (consumable.type === 'tarot') {
+        if ('condition' in consumable) {
+            if (consumable.condition()) {
+                consumable.effect();
+
+                // remove the tarot from consumables
+                consumables.splice(consumables.findIndex(c => c === consumable), 1);
+            }
+        } else {
+            consumable.effect();
+
+            // remove the tarot from consumables
+            consumables.splice(consumables.findIndex(c => c === consumable), 1);
+        }
+    }
+
+    // update the HTML
+    updateConsumables();
+    sortHand(gameVars.preferredSort);
+}
+
 // handle a round
 function runRound(neededScore) {
     // run all roundStart jokers
@@ -795,8 +880,7 @@ function runRound(neededScore) {
         handleJoker(joker, 'roundStart');
     }
 
-    console.log(`Hands left: ${gameVars.maxHands}`);
-    console.log(`Discards left: ${gameVars.maxDiscards}`);
+    console.log(`Hands left: ${gameVars.maxHands}\nDiscards left: ${gameVars.maxDiscards}`);
     console.log(`Score to beat blind: ${neededScore}`);
     // set variables
     gameVars.firstHand = true;
@@ -811,4 +895,5 @@ function runRound(neededScore) {
     dealHand();
 }
 
+updateConsumables();
 runRound(300);
