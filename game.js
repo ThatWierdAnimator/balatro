@@ -38,7 +38,7 @@ var gameVars = {
 }
 
 let hand = [];
-let consumables = [{ ...tarotCards.highPriestess }];
+let consumables = [{ ...spectralCards.grim }];
 var jokers = [];
 
 // returns the hand type as a string
@@ -60,7 +60,7 @@ function getHandType(playedHand) {
     if (tempHand.length === 5) {
         // check for flush five
         for (i = 1; i < tempHand.length; i++) {
-            if (tempHand[i].suit === tempHand[i - 1].suit && tempHand[i].rank === tempHand[i - 1].rank) {
+            if ((tempHand[i].suit === tempHand[i - 1].suit || tempHand[i].enhancement === 'wild' || tempHand[i - 1].enhancement === 'wild') && tempHand[i].rank === tempHand[i - 1].rank) {
                 if (i === tempHand.length - 1) {
                     // every card scores in a flush five
                     for (card of tempHand) {
@@ -68,7 +68,7 @@ function getHandType(playedHand) {
                     }
                     return 'flush five';
                 }
-            } else if (jokers.includes(allJokers.smearedJoker) &&
+            } else if (jokers.find(j => j.name === allJokers.smearedJoker.name) &&
                 ((tempHand[i].suit === 'hearts' && tempHand[i - 1].suit === 'diamonds') ||
                     (tempHand[i].suit === 'diamonds' && tempHand[i - 1].suit === 'hearts') ||
                     (tempHand[i].suit === 'clubs' && tempHand[i - 1].suit === 'spades') ||
@@ -93,8 +93,8 @@ function getHandType(playedHand) {
         let toakSeen = false;
         let seenRanks = [];
         for (i = 1; i < tempHand.length; i++) {
-            if (tempHand[i].suit !== tempHand[i - 1].suit) {
-                if (jokers.includes(allJokers.smearedJoker)) {
+            if (!(tempHand[i].suit === tempHand[i - 1].suit || tempHand[i].enhancement === 'wild' || tempHand[i - 1].enhancement === 'wild')) {
+                if (jokers.find(j => j.name === allJokers.smearedJoker.name)) {
                     if (!((tempHand[i].suit === 'hearts' && tempHand[i - 1].suit === 'diamonds') ||
                         (tempHand[i].suit === 'diamonds' && tempHand[i - 1].suit === 'hearts') ||
                         (tempHand[i].suit === 'clubs' && tempHand[i - 1].suit === 'spades') ||
@@ -149,17 +149,17 @@ function getHandType(playedHand) {
         }
     }
 
-    // only straight flush is effected by four fingers so it gets it's own if statement
-    if (tempHand.length === 5 || (jokers.includes(allJokers.fourFingers) && playedHand.length >= 4)) {
+    // only straight flush is affected by four fingers so it gets it's own if statement
+    if (tempHand.length === 5 || (jokers.find(j => j.name === allJokers.fourFingers.name) && playedHand.length >= 4)) {
         // check for straight flush
         for (i = 1; i < tempHand.length; i++) {
-            if (i === tempHand.length - 1 && tempHand[i].suit === tempHand[i - 1].suit && tempHand[i].rank === 14 && tempHand[i - 1].rank === 5) {
+            if (i === tempHand.length - 1 && (tempHand[i].suit === tempHand[i - 1].suit || tempHand[i].enhancement === 'wild' || tempHand[i - 1].enhancement === 'wild') && tempHand[i].rank === 14 && tempHand[i - 1].rank === 5) {
                 // every card scores in a straight flush
                 for (card of tempHand) {
                     card.scoring = true;
                 }
                 return 'straight flush';
-            } else if (tempHand[i].suit !== tempHand[i - 1].suit || !(tempHand[i].rank >= tempHand[i - 1].rank + 1 && tempHand[i].rank <= tempHand[i - 1].rank + 1 + gameVars.straightGap)) {
+            } else if (!(tempHand[i].suit === tempHand[i - 1].suit || tempHand[i].enhancement === 'wild' || tempHand[i - 1].enhancement === 'wild') || !(tempHand[i].rank >= tempHand[i - 1].rank + 1 && tempHand[i].rank <= tempHand[i - 1].rank + 1 + gameVars.straightGap)) {
                 break;
             } else if (i === tempHand.length - 1 && tempHand[tempHand.length - 1].rank === 14) {
                 // if the highest card is an ace the hand is a royale flush
@@ -194,7 +194,7 @@ function getHandType(playedHand) {
     }
 
     // these hands need five cards to be played
-    if (tempHand.length === 5 || (jokers.includes(allJokers.fourFingers) && playedHand.length >= 4)) {
+    if (tempHand.length === 5 || (jokers.find(j => j.name === allJokers.fourFingers.name) && playedHand.length >= 4)) {
         // check for full house
         // toak stands for three of a kind
         let pairSeen = false;
@@ -228,7 +228,7 @@ function getHandType(playedHand) {
 
         // check for flush
         for (i = 1; i < tempHand.length; i++) {
-            if (tempHand[i].suit === tempHand[i - 1].suit) {
+            if (tempHand[i].suit === tempHand[i - 1].suit || tempHand[i].enhancement === 'wild' || tempHand[i - 1].enhancement === 'wild') {
                 if (i === tempHand.length - 1) {
                     // every card scores in a flush
                     for (card of tempHand) {
@@ -236,7 +236,7 @@ function getHandType(playedHand) {
                     }
                     return 'flush';
                 }
-            } else if (jokers.includes(allJokers.smearedJoker) &&
+            } else if (jokers.find(j => j.name === allJokers.smearedJoker.name) &&
                 ((tempHand[i].suit === 'hearts' && tempHand[i - 1].suit === 'diamonds') ||
                     (tempHand[i].suit === 'diamonds' && tempHand[i - 1].suit === 'hearts') ||
                     (tempHand[i].suit === 'clubs' && tempHand[i - 1].suit === 'spades') ||
@@ -438,7 +438,7 @@ function scoreHand(localHand) {
             // run another round ***TEMPORARY***
             runRound(300);
         } else if (gameVars.currentHands === 0) {
-            if (jokers.includes(allJokers.mrBones)) {
+            if (jokers.find(j => j.name === allJokers.mrBones.name)) {
                 jokers.splice(jokers.findIndex(j => j === allJokers.mrBones), 1);
                 console.log('Saved by Mr. Bones');
             } else {
@@ -531,6 +531,16 @@ function handleJoker(joker, trigger) {
             joker.effect();
         }
     }
+
+    if ('enhancement' in joker && trigger === 'afterScore') {
+        if (joker.enhancement === 'polychrome') {
+            currentScore.mult *= 1.5;
+        } else if (joker.enhancement === 'holographic') {
+            currentScore.mult += 10;
+        } else if (joker.enhancement === 'foil') {
+            currentScore.chips += 50;
+        }
+    }
 }
 
 // handles cards, applies edition and enhancements
@@ -554,7 +564,7 @@ function handleCard(card, retrigger) {
             if (Math.floor(Math.random() * 5) < 1 + gameVars.probabilitySkew) {
                 currentScore.mult += 20;
 
-                if (jokers.includes(allJokers.luckyCat)) {
+                if (jokers.find(j => j.name === allJokers.luckyCat.name)) {
                     if (!('luckyHits') in gameVars || gameVars.luckyHits === undefined) {
                         gameVars.luckyHits = 0;
                     }
@@ -566,7 +576,7 @@ function handleCard(card, retrigger) {
             if (Math.floor(Math.random() * 20) < 1 + gameVars.probabilitySkew) {
                 gameVars.money += 20;
 
-                if (jokers.includes(allJokers.luckyCat)) {
+                if (jokers.find(j => j.name === allJokers.luckyCat.name)) {
                     if (!('luckyHits') in gameVars || gameVars.luckyHits === undefined) {
                         gameVars.luckyHits = 0;
                     }
@@ -773,40 +783,44 @@ function sortHand(type) {
             }
         } toggleSelectSelf()"><p>`;
 
-        if (hand[i].selected) {
-            template = `<button class="card selected" id="card-${i}" onclick="function toggleSelectSelf() {
-                if (hand.filter(c => c.selected).length < 5 && !hand[${i}].selected) {
-                    document.getElementById('card-${i}').classList.add('selected');
-                    hand[${i}].selected = true;
-                } else if (hand[${i}].selected) {
-                    document.getElementById('card-${i}').classList.remove('selected');
-                    hand[${i}].selected = false;
-                }
-            } toggleSelectSelf()"><p>`;
-        }
-
-        if ('edition' in hand[i]) {
-            template += `${hand[i].edition} `
-        }
-
-        if ('seal' in hand[i]) {
-            template += `${hand[i].seal} seal `
-        }
-
-        if ('enhancement' in hand[i]) {
-            template += `${hand[i].enhancement} `
-        }
-
-        if (hand[i].rank === 14) {
-            displayHand.innerHTML += `${template}Ace of ${hand[i].suit}</p></button>`
-        } else if (hand[i].rank === 13) {
-            displayHand.innerHTML += `${template}King of ${hand[i].suit}</p></button>`
-        } else if (hand[i].rank === 12) {
-            displayHand.innerHTML += `${template}Queen of ${hand[i].suit}</p></button>`
-        } else if (hand[i].rank === 11) {
-            displayHand.innerHTML += `${template}Jack of ${hand[i].suit}</p></button>`
+        if (hand[i].enhancement === 'stone') {
+            displayHand.innerHTML += `${template}Stone Card</p></button>`
         } else {
-            displayHand.innerHTML += `${template}${hand[i].rank} of ${hand[i].suit}</p></button>`
+            if (hand[i].selected) {
+                template = `<button class="card selected" id="card-${i}" onclick="function toggleSelectSelf() {
+                    if (hand.filter(c => c.selected).length < 5 && !hand[${i}].selected) {
+                        document.getElementById('card-${i}').classList.add('selected');
+                        hand[${i}].selected = true;
+                    } else if (hand[${i}].selected) {
+                        document.getElementById('card-${i}').classList.remove('selected');
+                        hand[${i}].selected = false;
+                    }
+                } toggleSelectSelf()"><p>`;
+            }
+    
+            if ('edition' in hand[i]) {
+                template += `${hand[i].edition} `
+            }
+    
+            if ('seal' in hand[i]) {
+                template += `${hand[i].seal} seal `
+            }
+    
+            if ('enhancement' in hand[i]) {
+                template += `${hand[i].enhancement} `
+            }
+    
+            if (hand[i].rank === 14) {
+                displayHand.innerHTML += `${template}Ace of ${hand[i].suit}</p></button>`
+            } else if (hand[i].rank === 13) {
+                displayHand.innerHTML += `${template}King of ${hand[i].suit}</p></button>`
+            } else if (hand[i].rank === 12) {
+                displayHand.innerHTML += `${template}Queen of ${hand[i].suit}</p></button>`
+            } else if (hand[i].rank === 11) {
+                displayHand.innerHTML += `${template}Jack of ${hand[i].suit}</p></button>`
+            } else {
+                displayHand.innerHTML += `${template}${hand[i].rank} of ${hand[i].suit}</p></button>`
+            }
         }
     }
 }
@@ -838,6 +852,7 @@ function updateConsumables() {
     }
 }
 
+// handles a consumable
 function useConsumable(consumable) {
     // if the card is a planet run, level up it's hand type
     if (consumable.type === 'planet') {
@@ -849,22 +864,60 @@ function useConsumable(consumable) {
 
         // remove the planet from consumables
         consumables.splice(consumables.findIndex(c => c === consumable), 1);
+
+        // deselect the card
+        consumable.selected = false;
+
+        // set lastTarotPlant to the planet for the fool
+        gameVars.lastTarotPlanet = consumable;
     }
 
-    // if the card is a tarot, check for condition and apply effect
-    if (consumable.type === 'tarot') {
+    // if the card is a tarot or spectral, check for condition and apply effect
+    if (consumable.type === 'tarot' || consumable.type === 'spectral') {
         if ('condition' in consumable) {
             if (consumable.condition()) {
+                // run the effect
                 consumable.effect();
 
-                // remove the tarot from consumables
+                // remove the consumable from consumables
                 consumables.splice(consumables.findIndex(c => c === consumable), 1);
+
+                // deselect the card
+                consumable.selected = false;
+
+                // set lastTarotPlant to the tarot for the fool
+                if (consumable.type === 'tarot') {
+                    gameVars.lastTarotPlanet = consumable;
+                }
+
+                // deselect cards if the tarot commands it
+                if (consumable.deselecting) {
+                    for (card of hand) {
+                        card.selected = false;
+                    }
+                }
             }
         } else {
+            // run the effect
             consumable.effect();
 
-            // remove the tarot from consumables
+            // remove the consumable from consumables
             consumables.splice(consumables.findIndex(c => c === consumable), 1);
+
+            // deselect the card
+            consumable.selected = false;
+
+            // set lastTarotPlant to the tarot for the fool
+            if (consumable.type === 'tarot') {
+                gameVars.lastTarotPlanet = consumable;
+            }
+
+            // deselect cards if the tarot commands it
+            if (consumable.deselecting) {
+                for (card of hand) {
+                    card.selected = false;
+                }
+            }
         }
     }
 
@@ -882,6 +935,7 @@ function runRound(neededScore) {
 
     console.log(`Hands left: ${gameVars.maxHands}\nDiscards left: ${gameVars.maxDiscards}`);
     console.log(`Score to beat blind: ${neededScore}`);
+
     // set variables
     gameVars.firstHand = true;
     gameVars.firstDiscard = true;
