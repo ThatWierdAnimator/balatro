@@ -289,14 +289,14 @@ var tarotCards = {
     'wheel': {
         name: 'The Wheel of Fortune',
         type: 'tarot',
-        condition: () => jokers.filter(j => !('enhancement' in j)).length > 0,
+        condition: () => jokers.filter(j => !('edition' in j)).length > 0,
         effect: () => {
             if (randomNum < 0.0375) {
-                jokers.filter(j => !('enhancement' in j))[Math.floor(Math.random() * jokers.filter(j => !('enhancement' in j)).length)].enhancement = 'polychrome';
+                jokers.filter(j => !('edition' in j))[Math.floor(Math.random() * jokers.filter(j => !('edition' in j)).length)].enhancement = 'polychrome';
             } else if (randomNum < 0.0875) {
-                jokers.filter(j => !('enhancement' in j))[Math.floor(Math.random() * jokers.filter(j => !('enhancement' in j)).length)].enhancement = 'holographic';
+                jokers.filter(j => !('edition' in j))[Math.floor(Math.random() * jokers.filter(j => !('edition' in j)).length)].enhancement = 'holographic';
             } else if (randomNum < 0.125) {
-                jokers.filter(j => !('enhancement' in j))[Math.floor(Math.random() * jokers.filter(j => !('enhancement' in j)).length)].enhancement = 'foil';
+                jokers.filter(j => !('edition' in j))[Math.floor(Math.random() * jokers.filter(j => !('edition' in j)).length)].enhancement = 'foil';
             }
         }
     },
@@ -324,6 +324,10 @@ var tarotCards = {
             for (card of hand.filter(c => c.selected)) {
                 deck.splice(getCardIndex(card.id), 1);
                 hand.splice(hand.findIndex(c => c === card), 1);
+
+                for (joker of jokers) {
+                    handleJoker(joker, 'onDestroy');
+                }
             }
         }
     },
@@ -444,6 +448,7 @@ var tarotCards = {
                     return true;
                 }).length)]);
             }
+            updateJokers();
         }
     },
     'world': {
@@ -468,6 +473,11 @@ var spectralCards = {
             hand.splice(hand.findIndex(c => c === destroyedCard), 1);
             deck.splice(getCardIndex(destroyedCard.id), 1);
 
+            card = destroyedCard;
+            for (joker of jokers) {
+                handleJoker(joker, 'onDestroy');
+            }
+
             for (let i = 0; i < 3; i++) {
                 deck.push(new Card('face', 'rand', 'rand'));
                 hand.push(deck[deck.length - 1]);
@@ -482,9 +492,219 @@ var spectralCards = {
             hand.splice(hand.findIndex(c => c === destroyedCard), 1);
             deck.splice(getCardIndex(destroyedCard.id), 1);
 
+            card = destroyedCard;
+            for (joker of jokers) {
+                handleJoker(joker, 'onDestroy');
+            }
+
             for (let i = 0; i < 2; i++) {
                 deck.push(new Card('ace', 'rand', 'rand'));
                 hand.push(deck[deck.length - 1]);
+            }
+        }
+    },
+    'incantation': {
+        name: 'Incantation',
+        type: 'spectral',
+        effect: () => {
+            let destroyedCard = hand[Math.floor(Math.random() * hand.length)];
+            hand.splice(hand.findIndex(c => c === destroyedCard), 1);
+            deck.splice(getCardIndex(destroyedCard.id), 1);
+
+            card = destroyedCard;
+            for (joker of jokers) {
+                handleJoker(joker, 'onDestroy');
+            }
+
+            for (let i = 0; i < 4; i++) {
+                deck.push(new Card('num', 'rand', 'rand'));
+                hand.push(deck[deck.length - 1]);
+            }
+        }
+    },
+    'talisman': {
+        name: 'Talisman',
+        type: 'spectral',
+        deselecting: true,
+        condition: () => hand.filter(c => c.selected).length === 1,
+        effect: () => {
+            for (card of hand.filter(c => c.selected)) {
+                card.seal = 'gold';
+            }
+        }
+    },
+    'aura': {
+        name: 'Aura',
+        type: 'spectral',
+        deselecting: true,
+        condition: () => hand.filter(c => c.selected).length === 1,
+        effect: () => {
+            for (card of hand.filter(c => c.selected)) {
+                let random = Math.random();
+                if (random < 0.15) {
+                    card.edition = 'polychrome';
+                } else if (random < 0.5) {
+                    card.edition = 'holographic';
+                } else {
+                    card.edition = 'foil';
+                }
+            }
+        }
+    },
+    'wraith': {
+        name: 'Wraith',
+        type: 'spectral',
+        effect: () => {
+            jokers.push(Object.values(allJokers).filter(j => j.rarity === 'rare')[Math.floor(Math.random() * Object.values(allJokers).filter(j => j.rarity === 'rare').length)]);
+            updateJokers();
+
+            gameVars.money = 0;
+        }
+    },
+    'sigil': {
+        name: 'Sigil',
+        type: 'spectral',
+        effect: () => {
+            let newSuit = allSuits[Math.floor(Math.random() * allSuits.length)];
+            for (card of hand) {
+                card.suit = newSuit;
+            }
+        }
+    },
+    'ouija': {
+        name: 'Ouija',
+        type: 'spectral',
+        effect: () => {
+            let newRank = Math.floor(Math.random() * 13) + 2;
+            for (card of hand) {
+                card.rank = newRank;
+            }
+
+            gameVars.handSize--;
+        }
+    },
+    'ectoplasm': {
+        name: 'Ectoplasm',
+        type: 'spectral',
+        effect: () => {
+            jokers[Math.floor(Math.random() * jokers.length)].edition = 'negative';
+
+            gameVars.handSize--;
+        }
+    },
+    'immolate': {
+        name: 'Immolate',
+        type: 'spectral',
+        effect: () => {
+            for (let i = 0; i < 5; i++) {
+                let destroyedCard = hand[Math.floor(Math.random() * hand.length)];
+                hand.splice(hand.findIndex(c => c === destroyedCard), 1);
+                deck.splice(getCardIndex(destroyedCard.id), 1);
+            }
+
+            gameVars.money += 20;
+        }
+    },
+    'ankh': {
+        name: 'Ankh',
+        type: 'spectral',
+        effect: () => {
+            let copiedJoker = jokers[Math.floor(Math.random() * jokers.length)];
+
+            for (joker of jokers.filter(j => j !== copiedJoker)) {
+                jokers.splice(jokers.findIndex(j => j === joker), 1);
+            }
+
+            jokers.push({ ...copiedJoker });
+            updateJokers();
+        }
+    },
+    'dejaVu': {
+        name: 'Deja Vu',
+        type: 'spectral',
+        deselecting: true,
+        condition: () => hand.filter(c => c.selected).length === 1,
+        effect: () => {
+            for (card of hand.filter(c => c.selected)) {
+                card.seal = 'red';
+            }
+        }
+    },
+    'hex': {
+        name: 'Hex',
+        type: 'spectral',
+        effect: () => {
+            let hexedJoker = jokers[Math.floor(Math.random() * jokers.length)];
+
+            for (joker of jokers.filter(j => j !== hexedJoker)) {
+                jokers.splice(jokers.findIndex(j => j === joker), 1);
+            }
+
+            jokers[jokers.findIndex(j => j === hexedJoker)].edition = 'polychrome';
+        }
+    },
+    'trance': {
+        name: 'Trance',
+        type: 'spectral',
+        deselecting: true,
+        condition: () => hand.filter(c => c.selected).length === 1,
+        effect: () => {
+            for (card of hand.filter(c => c.selected)) {
+                card.seal = 'blue';
+            }
+        }
+    },
+    'medium': {
+        name: 'Medium',
+        type: 'spectral',
+        deselecting: true,
+        condition: () => hand.filter(c => c.selected).length === 1,
+        effect: () => {
+            for (card of hand.filter(c => c.selected)) {
+                card.seal = 'purple';
+            }
+        }
+    },
+    'cryptid': {
+        name: 'Cryptid',
+        type: 'spectral',
+        deselecting: true,
+        condition: () => hand.filter(c => c.selected).length === 1,
+        effect: () => {
+            let card = hand.filter(c => c.selected)[0];
+            for (let i = 0; i < 2; i++) {
+                deck.push(new Card(card.rank, card.suit));
+
+                if (card.enhancement) {
+                    deck[deck.length - 1].enhancement = card.enhancement;
+                }
+
+                if (card.seal) {
+                    deck[deck.length - 1].seal = card.seal;
+                }
+
+                if (card.edition) {
+                    deck[deck.length - 1].edition = card.edition;
+                }
+
+                hand.push(deck[deck.length - 1]);
+            }
+        }
+    },
+    'soul': {
+        name: 'Soul',
+        type: 'spectral',
+        effect: () => {
+            jokers.push(Object.values(allJokers).filter(j => j.rarity === 'legendary')[Math.floor(Math.random() * Object.values(allJokers).filter(j => j.rarity === 'legendary').length)]);
+            updateJokers();
+        }
+    },
+    'blackHole': {
+        name: 'Black Hole',
+        type: 'spectral',
+        effect: () => {
+            for (handType of Object.keys(gameVars.handLevels)) {
+                gameVars.handLevels[handType]++;
             }
         }
     }
@@ -501,6 +721,7 @@ var spectralCards = {
     onDiscard - Triggered when a discard happens
     heldInHand - Triggered after beforeScore and before duringScore, meant for held in hand abilities
     onDestroy - Triggered when a card is destroyed
+    copyAbility - Triggered before every trigger, used for modifying blueprint or brainstorm
 
     Skipped Jokers:
     Credit Card
@@ -524,7 +745,6 @@ var spectralCards = {
     Campfire
     Swashbuckler
     Throwback
-    Showman
     Matador
     Invisible Joker
     Satellite
@@ -538,11 +758,6 @@ var spectralCards = {
     Also skipped temperance tarot card
 
     Unfinished Jokers:
-    8 Ball
-    Superposition
-    Séance
-    Vagabond
-    Sixth Sense
     Cavedish (should only appear in shop once michel is destroyed)
     Madness (don't do stuff on boss blind)
     Showman (add shop and stuff)
@@ -552,35 +767,41 @@ var spectralCards = {
 var allJokers = {
     'joker': {
         name: 'Joker',
+        rarity: 'common',
         trigger: 'afterScore',
         effect: () => currentScore.mult += 4
     },
     'greedyJoker': {
         name: 'Greedy Joker',
+        rarity: 'common',
         trigger: 'duringScore',
         condition: () => card.suit === 'diamonds' || (jokers.find(j => j.name === allJokers.smearedJoker.name) && card.suit === 'hearts') || card.enhancement === 'wild',
         effect: () => currentScore.mult += 3
     },
     'lustyJoker': {
         name: 'Lusty Joker',
+        rarity: 'common',
         trigger: 'duringScore',
         condition: () => card.suit === 'hearts' || (jokers.find(j => j.name === allJokers.smearedJoker.name) && card.suit === 'diamonds') || card.enhancement === 'wild',
         effect: () => currentScore.mult += 3
     },
     'wrathfulJoker': {
         name: 'Wrathful Joker',
+        rarity: 'common',
         trigger: 'duringScore',
         condition: () => card.suit === 'spades' || (jokers.find(j => j.name === allJokers.smearedJoker.name) && card.suit === 'clubs') || card.enhancement === 'wild',
         effect: () => currentScore.mult += 3
     },
     'gluttonousJoker': {
         name: 'Gluttonous Joker',
+        rarity: 'common',
         trigger: 'duringScore',
         condition: () => card.suit === 'clubs' || (jokers.find(j => j.name === allJokers.smearedJoker.name) && card.suit === 'spades') || card.enhancement === 'wild',
         effect: () => currentScore.mult += 3
     },
     'jollyJoker': {
         name: 'Jolly Joker',
+        rarity: 'common',
         trigger: 'afterScore',
         condition: () => {
             for (i = 0; i < playedHand.length; i++) {
@@ -597,6 +818,7 @@ var allJokers = {
     },
     'zanyJoker': {
         name: 'Zany Joker',
+        rarity: 'common',
         trigger: 'afterScore',
         condition: () => {
             for (i = 0; i < playedHand.length; i++) {
@@ -616,6 +838,7 @@ var allJokers = {
     },
     'madJoker': {
         name: 'Mad Joker',
+        rarity: 'common',
         trigger: 'afterScore',
         condition: () => {
             let pairCount = 0;
@@ -641,6 +864,7 @@ var allJokers = {
     },
     'crazyJoker': {
         name: 'Crazy Joker',
+        rarity: 'common',
         trigger: 'afterScore',
         condition: () => {
             let tempHand = playedHand.sort(function (a, b) {
@@ -669,6 +893,7 @@ var allJokers = {
     },
     'drollJoker': {
         name: 'Droll Joker',
+        rarity: 'common',
         trigger: 'afterScore',
         condition: () => {
             if (playedHand.length === 5 || (jokers.find(j => j.name === allJokers.fourFingers.name) && playedHand.length >= 4)) {
@@ -698,6 +923,7 @@ var allJokers = {
     },
     'slyJoker': {
         name: 'Sly Joker',
+        rarity: 'common',
         trigger: 'afterScore',
         condition: () => {
             for (i = 0; i < playedHand.length; i++) {
@@ -714,6 +940,7 @@ var allJokers = {
     },
     'wilyJoker': {
         name: 'Wily Joker',
+        rarity: 'common',
         trigger: 'afterScore',
         condition: () => {
             for (i = 0; i < playedHand.length; i++) {
@@ -733,6 +960,7 @@ var allJokers = {
     },
     'cleverJoker': {
         name: 'Clever Joker',
+        rarity: 'common',
         trigger: 'afterScore',
         condition: () => {
             let pairCount = 0;
@@ -758,6 +986,7 @@ var allJokers = {
     },
     'deviousJoker': {
         name: 'Devious Joker',
+        rarity: 'common',
         trigger: 'afterScore',
         condition: () => {
             let tempHand = playedHand.sort(function (a, b) {
@@ -786,6 +1015,7 @@ var allJokers = {
     },
     'craftyJoker': {
         name: 'Crafty Joker',
+        rarity: 'common',
         trigger: 'afterScore',
         condition: () => {
             if (playedHand.length === 5 || (jokers.find(j => j.name === allJokers.fourFingers.name) && playedHand.length >= 4)) {
@@ -815,12 +1045,14 @@ var allJokers = {
     },
     'halfJoker': {
         name: 'Half Joker',
+        rarity: 'common',
         trigger: 'afterScore',
         condition: () => playedHand.length <= 3,
         effect: () => currentScore.mult += 20
     },
     'jokerStencil': {
         name: 'Joker Stencil',
+        rarity: 'uncommon',
         trigger: 'afterScore',
         effect: () => {
             let count = gameVars.maxJokers - jokers.length;
@@ -833,60 +1065,88 @@ var allJokers = {
         }
     },
     'fourFingers': {
-        name: 'Four Fingers'
+        name: 'Four Fingers',
+        rarity: 'uncommon'
     },
     'mime': {
         name: 'Mime',
+        rarity: 'uncommon',
         retriggering: true,
         trigger: 'heldInHand',
         effect: () => handleHeldCard(card, true)
     },
     'banner': {
         name: 'Banner',
+        rarity: 'common',
         trigger: 'afterScore',
         effect: () => currentScore.chips += gameVars.currentDiscards * 30
     },
     'mysticSummit': {
         name: 'Mystic Summit',
+        rarity: 'common',
         trigger: 'afterScore',
         condition: () => gameVars.currentDiscards === 0,
         effect: () => currentScore.mult += 15
     },
     'marbleJoker': {
         name: 'Marble Joker',
+        rarity: 'uncommon',
         trigger: 'roundStart',
         effect: () => deck.push(new Card('rand', 'rand', 'stone'))
     },
     'loyaltyCard': {
         name: 'Loyalty Card',
+        rarity: 'uncommon',
         trigger: 'afterScore',
         condition: () => {
             if (!('loyaltyCardCountdown' in gameVars)) {
                 gameVars.loyaltyCardCountdown = 6;
             }
-            gameVars.loyaltyCardCountdown -= 1;
+
             if (gameVars.loyaltyCardCountdown === 0) {
                 gameVars.loyaltyCardCountdown = 6;
                 return true;
             }
         },
-        effect: () => currentScore.mult *= 4
+        effect: () => currentScore.mult *= 4,
+        modifyTrigger: 'beforeScore',
+        modifyEffect: () => {
+            if (!('loyaltyCardCountdown' in gameVars)) {
+                gameVars.loyaltyCardCountdown = 6;
+            }
+            gameVars.loyaltyCardCountdown--;
+        }
     },
     '8ball': {
         name: '8 Ball',
+        rarity: 'common',
         trigger: 'duringScore',
         condition: () => card.rank === 8 && Math.floor(Math.random() * 4) < 1 + gameVars.probabilitySkew,
         effect: () => {
-            console.log('Tarot generated!');
+            for (i = 0; i < 1; i++) {
+                // push a random tarot to the consumables
+                consumables.push({ ...tarotCards[Object.keys(tarotCards)[Math.floor(Math.random() * Object.keys(tarotCards).length)]] });
+
+                // if there are duplicates and no showman remove the duplicate
+                // also if the tarot is undefined remove it
+                // also if there are no more unused tarots ignore this
+                if ((consumables.some(c => c.name === consumables[consumables.length - 1].name && c !== consumables[consumables.length - 1]) && !jokers.find(j => j.name === allJokers.showman.name)) && consumables.filter(c => c.type === 'tarot' && c.name !== 'The Emporer').length < Object.keys(tarotCards).length || Object.keys(consumables[consumables.length - 1]).length === 0) {
+                    consumables.pop();
+                    i--;
+                }
+            }
+            updateConsumables();
         }
     },
     'misprint': {
         name: 'Misprint',
+        rarity: 'common',
         trigger: 'afterScore',
         effect: () => currentScore.mult += Math.floor(Math.random() * 24)
     },
     'dusk': {
         name: 'Dusk',
+        rarity: 'uncommon',
         trigger: 'duringScore',
         retriggering: true,
         condition: () => gameVars.currentHands === 0,
@@ -894,6 +1154,7 @@ var allJokers = {
     },
     'raisedFist': {
         name: 'Raised Fist',
+        rarity: 'common',
         trigger: 'heldInHand',
         condition: () => card === hand.reduce((minCard, card) => card.rank < minCard.rank ? card : minCard),
         effect: () => {
@@ -902,6 +1163,7 @@ var allJokers = {
     },
     'fibonacci': {
         name: 'Fibonacci',
+        rarity: 'uncommon',
         trigger: 'duringScore',
         condition: () => {
             if (card.rank === 14 ||
@@ -917,6 +1179,7 @@ var allJokers = {
     },
     'steelJoker': {
         name: 'Steel Joker',
+        rarity: 'uncommon',
         trigger: 'afterScore',
         condition: () => {
             for (let checkedCard of deck) {
@@ -938,33 +1201,39 @@ var allJokers = {
     },
     'scaryFace': {
         name: 'Scary Face',
+        rarity: 'common',
         trigger: 'duringScore',
         condition: () => jokers.find(j => j.name === allJokers.pareidolia.name) || (card.rank <= 13 && card.rank >= 11),
         effect: () => currentScore.chips += 30
     },
     'abstractJoker': {
         name: 'Abstract Joker',
+        rarity: 'common',
         trigger: 'afterScore',
         effect: () => currentScore.mult += jokers.length * 3
     },
     'delayedGratification': {
         name: 'Delayed Gratification',
+        rarity: 'common',
         trigger: 'roundEnd',
         condition: () => gameVars.firstDiscard,
         effect: () => gameVars.money += gameVars.currentDiscards * 2
     },
     'hack': {
         name: 'Hack',
+        rarity: 'common',
         trigger: 'duringScore',
         retriggering: true,
         condition: () => card.rank <= 5 && card.rank >= 2 && card.enhancement !== 'stone',
         effect: () => handleCard(card, true)
     },
     'pareidolia': {
-        name: 'Pareidolia'
+        name: 'Pareidolia',
+        rarity: 'common'
     },
     'grosMichel': {
         name: 'Gros Michel',
+        rarity: 'common',
         trigger: 'afterScore',
         effect: () => currentScore.mult += 15,
         modifyTrigger: 'roundEnd',
@@ -976,18 +1245,21 @@ var allJokers = {
     },
     'evenSteven': {
         name: 'Even Steven',
+        rarity: 'common',
         trigger: 'duringScore',
         condition: () => card.rank <= 10 && card.rank % 2 === 0,
         effect: () => currentScore.mult += 4
     },
     'oddTodd': {
         name: 'Odd Todd',
+        rarity: 'common',
         trigger: 'duringScore',
         condition: () => (card.rank <= 10 && card.rank & 2 === 1) || card.rank === 14,
         effect: () => currentScore.chips += 31
     },
     'scholar': {
         name: 'Scholar',
+        rarity: 'common',
         trigger: 'duringScore',
         condition: () => card.rank === 14,
         effect: () => {
@@ -997,17 +1269,20 @@ var allJokers = {
     },
     'businessCard': {
         name: 'Business Card',
+        rarity: 'common',
         trigger: 'duringScore',
         condition: () => (jokers.find(j => j.name === allJokers.pareidolia.name) || (card.rank <= 13 && card.rank >= 11)) && Math.floor(Math.random() * 2) < 1 + gameVars.probabilitySkew,
         effect: () => gameVars.money += 2
     },
     'supernova': {
         name: 'Supernova',
+        rarity: 'common',
         trigger: 'afterScore',
         effect: () => currentScore.mult += gameVars.playedHands[getHandType(playedHand)]
     },
     'rideTheBus': {
         name: 'Ride the Bus',
+        rarity: 'common',
         trigger: 'afterScore',
         condition: () => {
             if (!('rideTheBusMult' in gameVars)) {
@@ -1033,22 +1308,25 @@ var allJokers = {
         },
         effect: () => currentScore.mult += gameVars.rideTheBusMult
     },
-    'blackboard': {
-        name: 'Blackboard',
-        trigger: 'afterScore',
-        condition: () => hand.filter(c => (c.suit === 'hearts' || c.suit === 'diamonds') && c.enhancement !== 'wild').length === 0,
-        effect: () => currentScore.mult *= 3
-    },
     'burglar': {
         name: 'Burglar',
+        rarity: 'uncommon',
         trigger: 'roundStart',
         effect: () => {
             gameVars.currentHands += 3;
             gameVars.currentDiscards = 0;
         }
     },
+    'blackboard': {
+        name: 'Blackboard',
+        rarity: 'uncommon',
+        trigger: 'afterScore',
+        condition: () => hand.filter(c => (c.suit === 'hearts' || c.suit === 'diamonds') && c.enhancement !== 'wild').length === 0,
+        effect: () => currentScore.mult *= 3
+    },
     'runner': {
         name: 'Runner',
+        rarity: 'common',
         trigger: 'afterScore',
         condition: () => getHandType(playedHand) === 'straight' || getHandType(playedHand) === 'straight flush' || getHandType(playedHand) === 'royal flush',
         effect: () => {
@@ -1063,6 +1341,7 @@ var allJokers = {
     },
     'iceCream': {
         name: 'Ice Cream',
+        rarity: 'common',
         trigger: 'afterScore',
         effect: () => {
             if (!('iceCreamChips' in gameVars)) {
@@ -1076,6 +1355,7 @@ var allJokers = {
     },
     'dna': {
         name: 'DNA',
+        rarity: 'rare',
         trigger: 'beforeScore',
         condition: () => gameVars.firstHand && playedHand.length === 1,
         effect: () => {
@@ -1085,6 +1365,7 @@ var allJokers = {
     },
     'splash': {
         name: 'Splash',
+        rarity: 'common',
         trigger: 'beforeScore',
         effect: () => {
             for (let card of playedHand) {
@@ -1094,20 +1375,35 @@ var allJokers = {
     },
     'blueJoker': {
         name: 'Blue Joker',
+        rarity: 'common',
         trigger: 'afterScore',
         effect: () => currentScore.chips += deck.filter(c => !c.dealt).length * 2
     },
     'sixthSense': {
         name: 'Sixth Sense',
+        rarity: 'uncommon',
         trigger: 'afterScore',
         condition: () => playedHand.length === 1 && playedHand[0].rank === 6 && gameVars.firstHand,
         effect: () => {
             deck.splice(getCardIndex(playedHand[0].id), 1);
-            console.log('Spectral generated!');
+            for (i = 0; i < 1; i++) {
+                // push a random tarot to the consumables
+                consumables.push({ ...spectralCards[Object.keys(spectralCards)[Math.floor(Math.random() * Object.keys(spectralCards).length)]] });
+
+                // if there are duplicates and no showman remove the duplicate
+                // also if the tarot is undefined remove it
+                // also if there are no more unused tarots ignore this
+                if ((consumables.some(c => c.name === consumables[consumables.length - 1].name && c !== consumables[consumables.length - 1]) && !jokers.find(j => j.name === allJokers.showman.name)) && consumables.filter(c => c.type === 'tarot' && c.name !== 'The Emporer').length < Object.keys(spectralCards).length || Object.keys(consumables[consumables.length - 1]).length === 0) {
+                    consumables.pop();
+                    i--;
+                }
+            }
+            updateConsumables();
         }
     },
     'hiker': {
         name: 'Hiker',
+        rarity: 'uncommon',
         trigger: 'duringScore',
         effect: () => {
             if (!('bonusChips' in card)) {
@@ -1119,12 +1415,14 @@ var allJokers = {
     },
     'facelessJoker': {
         name: 'Faceless Joker',
+        rarity: 'common',
         trigger: 'onDiscard',
         condition: () => playedHand.filter(c => c.rank >= 11 && c.rank <= 13).length >= 3,
         effect: () => gameVars.money += 3
     },
     'greenJoker': {
         name: 'Green Joker',
+        rarity: 'common',
         trigger: 'afterScore',
         effect: () => {
             if (!('greenJokerMult' in gameVars)) {
@@ -1140,16 +1438,32 @@ var allJokers = {
     },
     'superposition': {
         name: 'Superposition',
+        rarity: 'common',
         trigger: 'beforeScore',
         condition: () => {
             if ((getHandType(playedHand) === 'straight' || getHandType(playedHand) === 'straight flush' || getHandType(playedHand) === 'royal flush') && playedHand.reduce((c1, c2) => c1.rank === 14 || c2.rank === 14)) {
                 return true;
             }
         },
-        effect: () => console.log('Tarot generated!')
+        effect: () => {
+            for (i = 0; i < 1; i++) {
+                // push a random tarot to the consumables
+                consumables.push({ ...tarotCards[Object.keys(tarotCards)[Math.floor(Math.random() * Object.keys(tarotCards).length)]] });
+
+                // if there are duplicates and no showman remove the duplicate
+                // also if the tarot is undefined remove it
+                // also if there are no more unused tarots ignore this
+                if ((consumables.some(c => c.name === consumables[consumables.length - 1].name && c !== consumables[consumables.length - 1]) && !jokers.find(j => j.name === allJokers.showman.name)) && consumables.filter(c => c.type === 'tarot' && c.name !== 'The Emporer').length < Object.keys(tarotCards).length || Object.keys(consumables[consumables.length - 1]).length === 0) {
+                    consumables.pop();
+                    i--;
+                }
+            }
+            updateConsumables();
+        }
     },
     'toDoList': {
         name: 'To Do List',
+        rarity: 'common',
         trigger: 'afterScore',
         condition: () => {
             if (!('toDoTarget' in gameVars)) {
@@ -1178,6 +1492,7 @@ var allJokers = {
     },
     'cavendish': {
         name: 'Cavendish',
+        rarity: 'common',
         trigger: 'afterScore',
         effect: () => currentScore.mult *= 3,
         modifyCondition: () => Math.floor(Math.random() * 1000) < 1 + gameVars.probabilitySkew,
@@ -1188,6 +1503,7 @@ var allJokers = {
     },
     'cardSharp': {
         name: 'Card Sharp',
+        rarity: 'uncommon',
         trigger: 'afterScore',
         condition: () => {
             if (getHandType(playedHand) in gameVars.startOfRoundPlayedHands) {
@@ -1202,6 +1518,7 @@ var allJokers = {
     },
     'madness': {
         name: 'Madness',
+        rarity: 'uncommon',
         trigger: 'afterScore',
         effect: () => currentScore.mult *= gameVars.madnessMult,
         modifyTrigger: 'roundStart',
@@ -1220,6 +1537,7 @@ var allJokers = {
     },
     'squareJoker': {
         name: 'Square Joker',
+        rarity: 'common',
         trigger: 'afterScore',
         condition: () => {
             if (playedHand.length === 4) {
@@ -1238,12 +1556,28 @@ var allJokers = {
     },
     'seance': {
         name: 'Séance',
+        rarity: 'uncommon',
         trigger: 'beforeScore',
         condition: () => getHandType(playedHand) === 'straight flush' || getHandType(playedHand) === 'royal flush',
-        effect: () => console.log('Spectral generated!')
+        effect: () => {
+            for (i = 0; i < 1; i++) {
+                // push a random tarot to the consumables
+                consumables.push({ ...spectralCards[Object.keys(spectralCards)[Math.floor(Math.random() * Object.keys(spectralCards).length)]] });
+
+                // if there are duplicates and no showman remove the duplicate
+                // also if the tarot is undefined remove it
+                // also if there are no more unused tarots ignore this
+                if ((consumables.some(c => c.name === consumables[consumables.length - 1].name && c !== consumables[consumables.length - 1]) && !jokers.find(j => j.name === allJokers.showman.name)) && consumables.filter(c => c.type === 'tarot' && c.name !== 'The Emporer').length < Object.keys(spectralCards).length || Object.keys(consumables[consumables.length - 1]).length === 0) {
+                    consumables.pop();
+                    i--;
+                }
+            }
+            updateConsumables();
+        }
     },
     'vampire': {
         name: 'Vampire',
+        rarity: 'uncommon',
         trigger: 'afterScore',
         condition: () => 'vampireMult' in gameVars && gameVars.vampireMult > 1,
         effect: () => currentScore.mult *= gameVars.vampireMult,
@@ -1263,29 +1597,48 @@ var allJokers = {
     },
     'shortCut': {
         name: 'Shortcut',
+        rarity: 'uncommon',
         trigger: 'roundStart',
         effect: () => gameVars.straightGap = 1
     },
     'vagabond': {
         name: 'Vagabond',
+        rarity: 'rare',
         trigger: 'beforeScore',
         condition: () => gameVars.money <= 4,
-        effect: () => console.log('Tarot generated!')
+        effect: () => {
+            for (i = 0; i < 1; i++) {
+                // push a random tarot to the consumables
+                consumables.push({ ...tarotCards[Object.keys(tarotCards)[Math.floor(Math.random() * Object.keys(tarotCards).length)]] });
+
+                // if there are duplicates and no showman remove the duplicate
+                // also if the tarot is undefined remove it
+                // also if there are no more unused tarots ignore this
+                if ((consumables.some(c => c.name === consumables[consumables.length - 1].name && c !== consumables[consumables.length - 1]) && !jokers.find(j => j.name === allJokers.showman.name)) && consumables.filter(c => c.type === 'tarot' && c.name !== 'The Emporer').length < Object.keys(tarotCards).length || Object.keys(consumables[consumables.length - 1]).length === 0) {
+                    consumables.pop();
+                    i--;
+                }
+            }
+            updateConsumables();
+        }
     },
     'baron': {
         name: 'Baron',
+        rarity: 'rare',
         trigger: 'heldInHand',
         condition: () => card.rank === 13,
         effect: () => currentScore.mult *= 1.5
     },
     'cloud9': {
         name: 'Cloud 9',
+        rarity: 'uncommon',
         trigger: 'roundEnd',
         condition: () => deck.filter(c => c.rank === 9 && c.enhancement !== 'stone').length > 0,
         effect: () => gameVars.money += deck.filter(c => c.rank === 9 && c.enhancement !== 'stone').length
     },
     'obelisk': {
         name: 'Obelisk',
+        rarity: 'rare',
         trigger: 'afterScore',
         condition: () => 'obeliskMult' in gameVars && gameVars.obeliskMult > 1,
         effect: () => currentScore.mult *= gameVars.obeliskMult,
@@ -1305,6 +1658,7 @@ var allJokers = {
     },
     'midasMask': {
         name: 'Midas Mask',
+        rarity: 'uncommon',
         trigger: 'beforeScore',
         condition: () => jokers.find(j => j.name === allJokers.pareidolia.name) || playedHand.find(c => c.rank >= 11 && c.rank <= 13) !== undefined,
         effect: () => {
@@ -1317,6 +1671,7 @@ var allJokers = {
     },
     'photograph': {
         name: 'Photograph',
+        rarity: 'common',
         trigger: 'duringScore',
         condition: () => {
             if (!('firstPlayedFace' in gameVars)) {
@@ -1341,6 +1696,7 @@ var allJokers = {
     },
     'turtleBean': {
         name: 'Turtle Bean',
+        rarity: 'uncommon',
         trigger: 'roundStart',
         effect: () => {
             if (!('turtleBeanHandSize' in gameVars)) {
@@ -1356,18 +1712,21 @@ var allJokers = {
     },
     'erosion': {
         name: 'Erosion',
+        rarity: 'uncommon',
         trigger: 'afterScore',
         condition: () => deck.length < 52,
         effect: () => currentScore.mult += (52 - deck.length) * 4
     },
     'reservedParking': {
         name: 'Reserved Parking',
+        rarity: 'common',
         trigger: 'heldInHand',
         condition: () => ((card.rank <= 13 && card.rank >= 11) || jokers.find(j => j.name === allJokers.pareidolia.name)) && Math.floor(Math.random() * 2) < 1 + gameVars.probabilitySkew,
         effect: () => gameVars.money += 1
     },
     'mailInRebate': {
         name: 'Mail-In Rebate',
+        rarity: 'common',
         trigger: 'onDiscard',
         condition: () => playedHand.filter(c => c.rank === gameVars.mailInRank).length > 0,
         effect: () => gameVars.money += playedHand.filter(c => c.rank === gameVars.mailInRank).length * 3,
@@ -1376,6 +1735,7 @@ var allJokers = {
     },
     'juggler': {
         name: 'Juggler',
+        rarity: 'common',
         trigger: 'roundStart',
         effect: () => gameVars.handSize++,
         modifyTrigger: 'roundEnd',
@@ -1383,6 +1743,7 @@ var allJokers = {
     },
     'drunkard': {
         name: 'Drunkard',
+        rarity: 'common',
         trigger: 'roundStart',
         effect: () => gameVars.maxDiscards++,
         modifyTrigger: 'roundEnd',
@@ -1390,23 +1751,34 @@ var allJokers = {
     },
     'stoneJoker': {
         name: 'Stone Joker',
+        rarity: 'uncommon',
         trigger: 'afterScore',
         condition: () => deck.find(c => c.enhancement === 'stone') !== undefined,
         effect: () => currentScore.chips += deck.filter(c => c.enhancement === 'stone').length * 25
     },
     'goldenJoker': {
         name: 'Golden Joker',
+        rarity: 'common',
         trigger: 'roundEnd',
         effect: () => gameVars.money += 4
     },
     'luckyCat': {
         name: 'Lucky Cat',
+        rarity: 'uncommon',
         trigger: 'afterScore',
         condition: () => 'luckyHits' in gameVars && gameVars.luckyHits > 0,
         effect: () => currentScore.mult *= gameVars.luckyHits * 0.25 + 1
     },
+    'bull': {
+        name: 'Bull',
+        rarity: 'uncommon',
+        trigger: 'afterScore',
+        condition: () => gameVars.money > 0,
+        effect: () => currentScore.chips += gameVars.money * 2
+    },
     'tradingCard': {
         name: 'Trading Card',
+        rarity: 'uncommon',
         trigger: 'onDiscard',
         condition: () => gameVars.firstDiscard && playedHand.length === 1,
         effect: () => {
@@ -1416,6 +1788,7 @@ var allJokers = {
     },
     'popcorn': {
         name: 'Popcorn',
+        rarity: 'common',
         trigger: 'afterScore',
         effect: () => {
             if (!('popcornMult' in gameVars)) {
@@ -1431,14 +1804,9 @@ var allJokers = {
             }
         }
     },
-    'bull': {
-        name: 'Bull',
-        trigger: 'afterScore',
-        condition: () => gameVars.money > 0,
-        effect: () => currentScore.chips += gameVars.money * 2
-    },
     'spareTrousers': {
         name: 'Spare Trousers',
+        rarity: 'uncommon',
         trigger: 'afterScore',
         condition: () => 'trousersMult' in gameVars && gameVars.trousersMult > 0,
         effect: () => currentScore.mult += gameVars.trousersMult,
@@ -1473,6 +1841,7 @@ var allJokers = {
     },
     'ancientJoker': {
         name: 'Ancient Joker',
+        rarity: 'rare',
         trigger: 'duringScore',
         condition: () => card.suit === gameVars.ancientJokerSuit || card.enhancement === 'wild',
         effect: () => currentScore.mult *= 1.5,
@@ -1481,6 +1850,7 @@ var allJokers = {
     },
     'ramen': {
         name: 'Ramen',
+        rarity: 'uncommon',
         trigger: 'afterScore',
         effect: () => {
             if (!('ramenMult' in gameVars)) {
@@ -1502,6 +1872,7 @@ var allJokers = {
     },
     'walkieTalkie': {
         name: 'Walkie Talkie',
+        rarity: 'common',
         trigger: 'duringScore',
         condition: () => card.rank === 4 || card.rank === 10,
         effect: () => {
@@ -1511,6 +1882,7 @@ var allJokers = {
     },
     'seltzer': {
         name: 'Seltzer',
+        rarity: 'uncommon',
         retriggering: true,
         trigger: 'duringScore',
         condition: () => {
@@ -1532,6 +1904,7 @@ var allJokers = {
     },
     'castle': {
         name: 'Castle',
+        rarity: 'uncommon',
         trigger: 'afterScore',
         effect: () => {
             if (!('castleChips' in gameVars)) {
@@ -1552,27 +1925,32 @@ var allJokers = {
     },
     'smileyFace': {
         name: 'Smiley Face',
+        rarity: 'common',
         trigger: 'duringScore',
         condition: () => jokers.find(j => j.name === allJokers.pareidolia.name) || (card.rank >= 11 && card.rank <= 13),
         effect: () => currentScore.mult += 5
     },
     'goldenTicket': {
         name: 'Golden Ticket',
+        rarity: 'common',
         trigger: 'duringScore',
         condition: () => card.enhancement === 'gold',
         effect: () => gameVars.money += 4
     },
     'mrBones': {
-        name: 'Mr. Bones'
+        name: 'Mr. Bones',
+        rarity: 'uncommon'
     },
     'acrobat': {
         name: 'Acrobat',
+        rarity: 'uncommon',
         trigger: 'afterScore',
         condition: () => gameVars.currentHands === 0,
         effect: () => currentScore.mult *= 3
     },
     'sockAndBuskin': {
         name: 'Sock and Buskin',
+        rarity: 'uncommon',
         retriggering: true,
         trigger: 'duringScore',
         condition: () => jokers.find(j => j.name === allJokers.pareidolia.name) || (card.rank <= 13 && card.rank >= 11),
@@ -1580,6 +1958,7 @@ var allJokers = {
     },
     'troubadour': {
         name: 'Troubadour',
+        rarity: 'uncommon',
         trigger: 'roundStart',
         effect: () => {
             gameVars.handSize += 2;
@@ -1593,6 +1972,7 @@ var allJokers = {
     },
     'certificate': {
         name: 'Certificate',
+        rarity: 'uncommon',
         trigger: 'roundStart',
         effect: () => {
             deck.push(new Card('rand', 'rand', 'none', 'rand'));
@@ -1600,10 +1980,12 @@ var allJokers = {
         }
     },
     'smearedJoker': {
-        name: 'Smeared Joker'
+        name: 'Smeared Joker',
+        rarity: 'uncommon'
     },
     'hangingChad': {
         name: 'Hanging Chad',
+        rarity: 'common',
         retriggering: true,
         trigger: 'duringScore',
         condition: () => card === playedHand[0],
@@ -1614,39 +1996,46 @@ var allJokers = {
     },
     'roughGem': {
         name: 'Rough Gem',
+        rarity: 'uncommon',
         trigger: 'duringScore',
         condition: () => card.suit === 'diamonds' || (jokers.find(j => j.name === allJokers.smearedJoker.name) && card.suit === 'hearts') || card.enhancement === 'wild',
         effect: () => gameVars.money++
     },
     'bloodStone': {
         name: 'Bloodstone',
+        rarity: 'uncommon',
         trigger: 'duringScore',
         condition: () => (card.suit === 'hearts' || (jokers.find(j => j.name === allJokers.smearedJoker.name) && card.suit === 'diamonds') || card.enhancement === 'wild') && Math.floor(Math.random() * 2) < 1 + gameVars.probabilitySkew,
         effect: () => currentScore.mult *= 1.5
     },
     'arrowHead': {
         name: 'Arrowhead',
+        rarity: 'uncommon',
         trigger: 'duringScore',
         condition: () => card.suit === 'spades' || (jokers.find(j => j.name === allJokers.smearedJoker.name) && card.suit === 'clubs') || card.enhancement === 'wild',
         effect: () => currentScore.chips += 50
     },
     'onyxAgate': {
         name: 'Onyx Agate',
+        rarity: 'uncommon',
         trigger: 'duringScore',
         condition: () => card.suit === 'clubs' || (jokers.find(j => j.name === allJokers.smearedJoker.name) && card.suit === 'spades') || card.enhancement === 'wild',
         effect: () => currentScore.mult += 7
     },
     'glassJoker': {
         name: 'Glass Joker',
+        rarity: 'uncommon',
         trigger: 'afterScore',
         condition: () => 'glassBreaks' in gameVars && gameVars.glassBreaks > 0,
         effect: () => currentScore.mult *= 0.75 * gameVars.glassBreaks + 1
     },
     'showman': {
-        name: 'Showman'
+        name: 'Showman',
+        rarity: 'uncommon'
     },
     'flowerPot': {
         name: 'Flower Pot',
+        rarity: 'uncommon',
         trigger: 'afterScore',
         condition: () => {
             if (playedHand.some(card => card.suit === 'spades') && playedHand.some(card => card.suit === 'hearts') && playedHand.some(card => card.suit === 'clubs') && playedHand.some(card => card.suit === 'diamonds')) {
@@ -1687,24 +2076,28 @@ var allJokers = {
     },
     'blueprint': {
         name: 'Blueprint',
-        modifyTrigger: 'beforeScore',
+        rarity: 'rare',
+        modifyTrigger: 'copyAbility',
         modifyEffect: function () {
-            if ('retriggering' in jokers[this.index + 1]) {
-                this.retriggering = jokers[this.index + 1].retriggering;
-            }
-            if ('trigger' in jokers[this.index + 1]) {
-                this.trigger = jokers[this.index + 1].trigger;
-            }
-            if ('condition' in jokers[this.index + 1]) {
-                this.condition = jokers[this.index + 1].condition;
-            }
-            if ('effect' in jokers[this.index + 1]) {
-                this.effect = jokers[this.index + 1].effect;
+            if (jokers[jokers.findIndex(j => j === this) + 1]) {
+                if ('retriggering' in jokers[jokers.findIndex(j => j === this) + 1]) {
+                    this.retriggering = jokers[jokers.findIndex(j => j === this) + 1].retriggering;
+                }
+                if ('trigger' in jokers[jokers.findIndex(j => j === this) + 1]) {
+                    this.trigger = jokers[jokers.findIndex(j => j === this) + 1].trigger;
+                }
+                if ('condition' in jokers[jokers.findIndex(j => j === this) + 1]) {
+                    this.condition = jokers[jokers.findIndex(j => j === this) + 1].condition;
+                }
+                if ('effect' in jokers[jokers.findIndex(j => j === this) + 1]) {
+                    this.effect = jokers[jokers.findIndex(j => j === this) + 1].effect;
+                }
             }
         }
     },
     'weeJoker': {
         name: 'Wee Joker',
+        rarity: 'rare',
         trigger: 'afterScore',
         condition: () => 'weeChips' in gameVars && gameVars.weeChips > 0,
         effect: () => currentScore.chips += gameVars.weeChips,
@@ -1720,6 +2113,7 @@ var allJokers = {
     },
     'merryAndy': {
         name: 'Merry Andy',
+        rarity: 'uncommon',
         trigger: 'roundStart',
         effect: () => {
             gameVars.maxDiscards += 3;
@@ -1733,11 +2127,13 @@ var allJokers = {
     },
     'oopsAllSixes': {
         name: 'Oops! All 6s',
+        rarity: 'uncommon',
         trigger: 'beforeScore',
         effect: () => gameVars.probabilitySkew = jokers.filter(j => j === allJokers.oopsAllSixes).length
     },
     'theIdol': {
         name: 'The Idol',
+        rarity: 'uncommon',
         trigger: 'duringScore',
         condition: () => card.rank === gameVars.idolCard.rank && (card.suit === gameVars.idolCard.suit || card.enhancement === 'wild'),
         effect: () => currentScore.mult *= 2,
@@ -1751,12 +2147,14 @@ var allJokers = {
     },
     'seeingDouble': {
         name: 'Seeing Double',
+        rarity: 'uncommon',
         trigger: 'afterScore',
         condition: () => playedHand.some(card => card.suit === 'clubs' && card.scoring) && playedHand.some(card => card.suit !== 'clubs' && card.scoring) || playedHand.some(card => card.suit === 'clubs' && card.scoring) && playedHand.some(card => card.enhancement === 'wild' && card.scoring) || playedHand.some(card => card.enhancement === 'wild' && card.scoring) && playedHand.some(card => card.suit !== 'clubs' && card.scoring),
         effect: () => currentScore.mult *= 2
     },
     'hitTheRoad': {
         name: 'hitTheRoad',
+        rarity: 'rare',
         trigger: 'afterScore',
         effect: () => currentScore.mult *= gameVars.hitTheRoadMult,
         modifyTriggers: ['roundStart', 'onDiscard'],
@@ -1765,6 +2163,7 @@ var allJokers = {
     },
     'theDuo': {
         name: 'The Duo',
+        rarity: 'rare',
         trigger: 'afterScore',
         condition: () => {
             for (i = 0; i < playedHand.length; i++) {
@@ -1779,6 +2178,7 @@ var allJokers = {
     },
     'theTrio': {
         name: 'The Trio',
+        rarity: 'rare',
         trigger: 'afterScore',
         condition: () => {
             for (i = 0; i < playedHand.length; i++) {
@@ -1798,6 +2198,7 @@ var allJokers = {
     },
     'theFamily': {
         name: 'The Family',
+        rarity: 'rare',
         trigger: 'afterScore',
         condition: () => {
             for (i = 0; i < playedHand.length; i++) {
@@ -1817,18 +2218,21 @@ var allJokers = {
     },
     'theOrder': {
         name: 'The Order',
+        rarity: 'rare',
         trigger: 'afterScore',
         condition: () => getHandType(playedHand) === 'straight' || getHandType(playedHand) === 'straight flush' || getHandType(playedHand) === 'royal flush',
         effect: () => currentScore.mult *= 3
     },
     'theTribe': {
         name: 'The Tribe',
+        rarity: 'rare',
         trigger: 'afterScore',
         condition: () => getHandType(playedHand) === 'flush' || getHandType(playedHand) === 'straight flush' || getHandType(playedHand) === 'royal flush' || getHandType(playedHand) === 'flush five' || getHandType(playedHand) === 'flush house',
         effect: () => currentScore.mult *= 2
     },
     'stuntman': {
         name: 'Stuntman',
+        rarity: 'rare',
         trigger: 'afterScore',
         effect: () => currentScore.chips += 250,
         modifyTriggers: ['roundStart', 'roundEnd'],
@@ -1836,9 +2240,12 @@ var allJokers = {
     },
     'brainstorm': {
         name: 'Blueprint',
-        modifyTrigger: 'beforeScore',
+        rarity: 'rare',
+        modifyTrigger: 'copyAbility',
         modifyEffect: function () {
-            this.retriggering = jokers[0].retriggering;
+            if ('retriggering' in jokers[0]) {
+                this.retriggering = jokers[0].retriggering;
+            }
             if ('trigger' in jokers[0]) {
                 this.trigger = jokers[0].trigger;
             }
@@ -1852,30 +2259,35 @@ var allJokers = {
     },
     'shootTheMoon': {
         name: 'Shoot the Moon',
+        rarity: 'common',
         trigger: 'heldInHand',
         condition: () => card.rank === 12,
         effect: () => currentScore.mult += 13
     },
     'driversLiscense': {
         name: 'Drivers Liscense',
+        rarity: 'rare',
         trigger: 'afterScore',
         condition: () => deck.filter(c => c.enhancement).length >= 16,
         effect: () => currentScore.mult *= 3
     },
     'bootStraps': {
         name: 'Bootstraps',
+        rarity: 'uncommon',
         trigger: 'afterScore',
         condition: () => gameVars.money >= 5,
         effect: () => currentScore.mult += Math.floor(gameVars.money / 5) * 2
     },
     'triboulet': {
         name: 'Triboulet',
+        rarity: 'legendary',
         trigger: 'duringScore',
         condition: () => card.rank === 12 || card.rank === 13,
         effect: () => currentScore.mult *= 2
     },
     'yorick': {
         name: 'Yorick',
+        rarity: 'legendary',
         trigger: 'afterScore',
         condition: () => 'yorickMult' in gameVars && gameVars.yorickMult > 1,
         effect: () => currentScore.mult *= gameVars.yorickMult,
@@ -1923,9 +2335,10 @@ function Card(rank, suit, enhancement, seal, edition) {
         this.suit = suit;
     }
 
-    // use .filter to remove stone from all enhancements my gang
     if (enhancement !== 'none' && enhancement !== undefined) {
-        if (enhancement === 'rand') {
+        if (enhancement === 'rand' && (rank === 'face' || rank === 'ace')) {
+            this.enhancement = allEnhancements.filter(e => e !== 'stone')[Math.floor(Math.random() * allEnhancements.filter(e => e !== 'stone').length)];
+        } else if (enhancement === 'rand') {
             this.enhancement = allEnhancements[Math.floor(Math.random() * allEnhancements.length)];
         } else {
             this.enhancement = enhancement;

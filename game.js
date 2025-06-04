@@ -17,6 +17,16 @@
 */
 const displayHand = document.getElementById('card-container');
 const displayConsumables = document.getElementById('consumable-container');
+const displayJokers = document.getElementById('jokers-container');
+
+const gameArea = document.getElementById('game-area');
+const cashoutArea = document.getElementById('cashout-area');
+const shop = document.getElementById('shop');
+
+const cashoutButton = document.getElementById('cashout');
+
+shop.style.display = 'none';
+cashoutArea.style.display = 'none';
 
 var gameVars = {
     maxJokers: 5,
@@ -34,12 +44,27 @@ var gameVars = {
     gameState: 'none',
     score: 0,
     playedHands: {},
-    handLevels: {}
+    handLevels: {
+        'flush five': 1,
+        'flush house': 1,
+        'five of a kind': 1,
+        'straight flush': 1,
+        'four of a kind': 1,
+        'full house': 1,
+        'flush': 1,
+        'straight': 1,
+        'three of a kind': 1,
+        'two pair': 1,
+        'pair': 1,
+        'high card': 1
+    },
+    interestCap: 5
 }
 
 let hand = [];
-let consumables = [{ ...spectralCards.grim }];
+let consumables = [];
 var jokers = [];
+updateJokers();
 
 // returns the hand type as a string
 function getHandType(playedHand) {
@@ -368,9 +393,6 @@ function scoreHand(localHand) {
         // handle all held in hand jokers
         for (card of hand) {
             handleHeldCard(card);
-
-            // if it works it works ¯\_(ツ)_/¯
-            delete gameVars.retrigger;
         }
 
         // loop over every card
@@ -384,9 +406,6 @@ function scoreHand(localHand) {
             if (card.scoring) {
                 handleCard(card);
             }
-
-            // if it works it works ¯\_(ツ)_/¯
-            delete gameVars.retrigger;
         }
 
         // check if any of the jokers trigger after card scoring
@@ -435,8 +454,12 @@ function scoreHand(localHand) {
             hand = [];
             sortHand(gameVars.preferredSort);
 
-            // run another round ***TEMPORARY***
-            runRound(300);
+            // close game and open shop
+            gameArea.style.display = 'none';
+            cashoutArea.style.display = 'block'
+
+            // handle cashout
+            handleCashout();
         } else if (gameVars.currentHands === 0) {
             if (jokers.find(j => j.name === allJokers.mrBones.name)) {
                 jokers.splice(jokers.findIndex(j => j === allJokers.mrBones), 1);
@@ -471,6 +494,23 @@ function discardHand(localHand) {
 
         // all discarded cards are unselected and removed from the hand
         for (card of localHand) {
+            // handle purple seal
+            if (card.seal === 'purple') {
+                for (i = 0; i < 1; i++) {
+                    // push a random tarot to the consumables
+                    consumables.push({ ...tarotCards[Object.keys(tarotCards)[Math.floor(Math.random() * Object.keys(tarotCards).length)]] });
+
+                    // if there are duplicates and no showman remove the duplicate
+                    // also if the tarot is undefined remove it
+                    // also if there are no more unused tarots ignore this
+                    if ((consumables.some(c => c.name === consumables[consumables.length - 1].name && c !== consumables[consumables.length - 1]) && !jokers.find(j => j.name === allJokers.showman.name)) && consumables.filter(c => c.type === 'tarot' && c.name !== 'The Emporer').length < Object.keys(tarotCards).length || Object.keys(consumables[consumables.length - 1]).length === 0) {
+                        consumables.pop();
+                        i--;
+                    }
+                }
+                updateConsumables();
+            }
+
             delete card.selected;
             hand.splice(hand.findIndex(c => c === card), 1);
         }
@@ -495,6 +535,10 @@ function discardHand(localHand) {
 
 // handles the joker, checks for condition and applies effect
 function handleJoker(joker, trigger) {
+    if (joker.modifyTrigger === 'copyAbility') {
+        joker.modifyEffect();
+    }
+
     if (joker.modifyTrigger === trigger) {
         if ('modifyEffect' in joker) {
             if ('modifyCondition' in joker) {
@@ -532,26 +576,34 @@ function handleJoker(joker, trigger) {
         }
     }
 
-    if ('enhancement' in joker && trigger === 'afterScore') {
-        if (joker.enhancement === 'polychrome') {
+    if ('edition' in joker && trigger === 'afterScore') {
+        if (joker.edition === 'polychrome') {
             currentScore.mult *= 1.5;
-        } else if (joker.enhancement === 'holographic') {
+        } else if (joker.edition === 'holographic') {
             currentScore.mult += 10;
-        } else if (joker.enhancement === 'foil') {
+        } else if (joker.edition === 'foil') {
             currentScore.chips += 50;
         }
     }
 }
 
+// updates the HTML for the jokers
+function updateJokers() {
+    displayJokers.innerHTML = '';
+
+    for (i = 0; i < jokers.length; i++) {
+        let template = `<button class="joker" id="joker-${i}"><p>`;
+
+        if ('edition' in jokers[i]) {
+            template += `${jokers[i].edition} `
+        }
+
+        displayJokers.innerHTML += `${template}${jokers[i].name}</p></button>`
+    }
+}
+
 // handles cards, applies edition and enhancements
 function handleCard(card, retrigger) {
-    // tell other scripts a retrigger is going on
-    if (gameVars.retrigger === undefined) {
-        gameVars.retrigger = false;
-    } else {
-        gameVars.retrigger = retrigger;
-    }
-
     // handle all enhancements
     if ('enhancement' in card) {
         if (card.enhancement === 'mult') {
@@ -623,7 +675,7 @@ function handleCard(card, retrigger) {
     // check if any jokers trigger during card scoring
     for (let joker of jokers) {
         if (joker.retriggering) {
-            if (!gameVars.retrigger) {
+            if (!retrigger) {
                 handleJoker(joker, 'duringScore');
             }
         } else {
@@ -643,13 +695,6 @@ function handleCard(card, retrigger) {
 
 // handles cards held in hand
 function handleHeldCard(card, retrigger) {
-    // tell other scripts a retrigger is going on
-    if (gameVars.retrigger === undefined) {
-        gameVars.retrigger = false;
-    } else {
-        gameVars.retrigger = retrigger;
-    }
-
     // handle all enhancements
     if ('enhancement' in card) {
         if (card.enhancement === 'steel') {
@@ -659,11 +704,11 @@ function handleHeldCard(card, retrigger) {
         }
     }
 
-    // check if any jokers trigger during card scoring
+    // check if any jokers trigger during hand
     for (let joker of jokers) {
         // all the retrigger nonsense
         if (joker.retriggering) {
-            if (!gameVars.retrigger) {
+            if (!retrigger) {
                 handleJoker(joker, 'heldInHand');
             }
         } else {
@@ -676,7 +721,8 @@ function handleHeldCard(card, retrigger) {
         if (card.seal === 'red' && !retrigger) {
             handleHeldCard(card, true);
         } else if (card.seal === 'blue' && gameVars.gameState === 'roundEnd') {
-            // gimme a planet card gang
+            consumables.push(Object.values(planetCards).filter(p => p.hand === getHandType(playedHand))[0]);
+            updateConsumables();
         }
     }
 }
@@ -797,19 +843,19 @@ function sortHand(type) {
                     }
                 } toggleSelectSelf()"><p>`;
             }
-    
+
             if ('edition' in hand[i]) {
                 template += `${hand[i].edition} `
             }
-    
+
             if ('seal' in hand[i]) {
                 template += `${hand[i].seal} seal `
             }
-    
+
             if ('enhancement' in hand[i]) {
                 template += `${hand[i].enhancement} `
             }
-    
+
             if (hand[i].rank === 14) {
                 displayHand.innerHTML += `${template}Ace of ${hand[i].suit}</p></button>`
             } else if (hand[i].rank === 13) {
@@ -927,7 +973,9 @@ function useConsumable(consumable) {
 }
 
 // handle a round
-function runRound(neededScore) {
+function runRound(neededScore, newBlind) {
+    blind = newBlind;
+
     // run all roundStart jokers
     for (let joker of jokers) {
         handleJoker(joker, 'roundStart');
@@ -949,5 +997,26 @@ function runRound(neededScore) {
     dealHand();
 }
 
+// handle cashout
+function handleCashout() {
+    let cashoutMoney = 0;
+
+    if (gameVars.money >= gameVars.interestCap * 5) {
+        cashoutMoney += gameVars.interestCap;
+    } else {
+        cashoutMoney += Math.floor(gameVars.money / 5);
+    }
+
+    if (blind === 'small') {
+        cashoutMoney += 3;
+    } else if (blind === 'medium') {
+        cashoutMoney += 4;
+    } else {
+        cashoutMoney += 5;
+    }
+
+    cashoutButton.setAttribute('onclick', `function giveCashout() {gameVars.money = ${cashoutMoney}; console.log(gameVars.money)} giveCashout()`);
+}
+
 updateConsumables();
-runRound(300);
+runRound(1, 'small');
