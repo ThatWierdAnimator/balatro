@@ -1019,4 +1019,4 @@ function handleCashout() {
 }
 
 updateConsumables();
-runRound(1, 'small');
+runRound(300, 'small');
