@@ -454,12 +454,15 @@ function scoreHand(localHand) {
             hand = [];
             sortHand(gameVars.preferredSort);
 
-            // close game and open shop
-            gameArea.style.display = 'none';
-            cashoutArea.style.display = 'block'
+            // // close game and open shop
+            // gameArea.style.display = 'none';
+            // cashoutArea.style.display = 'block'
 
-            // handle cashout
-            handleCashout();
+            // // handle cashout
+            // handleCashout();
+
+            // ***TEMPORARY***
+            runRound(450, 'medium');
         } else if (gameVars.currentHands === 0) {
             if (jokers.find(j => j.name === allJokers.mrBones.name)) {
                 jokers.splice(jokers.findIndex(j => j === allJokers.mrBones), 1);
