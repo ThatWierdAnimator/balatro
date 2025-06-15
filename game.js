@@ -29,6 +29,8 @@ shop.style.display = 'none';
 cashoutArea.style.display = 'none';
 
 var gameVars = {
+    round: 0,
+    ante: 1,
     maxJokers: 5,
     maxHands: 4,
     maxDiscards: 3,
@@ -454,6 +456,11 @@ function scoreHand(localHand) {
             hand = [];
             sortHand(gameVars.preferredSort);
 
+            // if the beaten blind's a boss, up the ante
+            if (gameVars.blind.bossBlind) {
+                gameVars.ante++;
+            }
+
             // // close game and open shop
             // gameArea.style.display = 'none';
             // cashoutArea.style.display = 'block'
@@ -462,7 +469,7 @@ function scoreHand(localHand) {
             // handleCashout();
 
             // ***TEMPORARY***
-            runRound(450, 'medium');
+            runRound('boss');
         } else if (gameVars.currentHands === 0) {
             if (jokers.find(j => j.name === allJokers.mrBones.name)) {
                 jokers.splice(jokers.findIndex(j => j === allJokers.mrBones), 1);
@@ -976,8 +983,15 @@ function useConsumable(consumable) {
 }
 
 // handle a round
-function runRound(neededScore, newBlind) {
-    blind = newBlind;
+function runRound(blind, setScore) {
+    if (!setScore) {
+        // set the blind
+        gameVars.blind = allBlinds[blind];
+
+        neededScore = anteScores[gameVars.ante - 1] * gameVars.blind.mult;
+    } else {
+        neededScore = setScore;
+    }
 
     // run all roundStart jokers
     for (let joker of jokers) {
@@ -1022,4 +1036,4 @@ function handleCashout() {
 }
 
 updateConsumables();
-runRound(300, 'small');
+runRound('boss');

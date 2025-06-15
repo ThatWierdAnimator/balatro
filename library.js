@@ -1,3 +1,18 @@
+var anteScores = [300, 800, 2000, 5000, 11000, 20000, 35000, 50000];
+
+var allBlinds = {
+    'small': {
+        mult: 1
+    },
+    'medium': {
+        mult: 1.5
+    },
+    'boss': {
+        mult: 2,
+        bossBlind: true
+    }
+}
+
 var handVars = {
     'flush five': {
         name: 'flush five',
