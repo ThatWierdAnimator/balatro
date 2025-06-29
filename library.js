@@ -2,14 +2,64 @@ var anteScores = [300, 800, 2000, 5000, 11000, 20000, 35000, 50000];
 
 var allBlinds = {
     'small': {
+        name: 'Small Blind',
         mult: 1
     },
     'medium': {
+        name: 'Medium Blind',
         mult: 1.5
     },
     'boss': {
         mult: 2,
-        bossBlind: true
+        boss: true
+    },
+    'hook': {
+        name: 'The Hook',
+        mult: 2,
+        boss: true,
+        trigger: 'beforeScore',
+        effect: () => {
+            for (let i = 0; i < 2; i++) {
+                hand.splice(hand.findIndex(c => c === hand[Math.floor(Math.random() * hand.length)]), 1);
+            }
+        }
+    },
+    'ox': {
+        name: 'The Ox',
+        mult: 2,
+        boss: true,
+        trigger: 'beforeScore',
+        condition: () => getHandType(playedHand) === Object.keys(gameVars.playedHands).reduce((a, b) => gameVars.playedHands[a] >= gameVars.playedHands[b] ? a : b),
+        effect: () => gameVars.money = 0
+    },
+    'house': {
+        name: 'The House',
+        mult: 2,
+        boss: true
+        // ADD ACTUAL STUFF HERE
+    },
+    'wall': {
+        name: 'The Wall',
+        mult: 4,
+        boss: true
+    },
+    'arm': {
+        name: 'The Arm',
+        mult: 2,
+        boss: true,
+        trigger: 'beforeScore',
+        effect: () => {
+            if (gameVars.handLevels[getHandType(playedHand)] > 1) {
+                gameVars.handLevels[getHandType(playedHand)]--;
+            }
+        }
+    },
+    'water': {
+        name: 'The Water',
+        mult: 2,
+        boss: true,
+        trigger: 'roundStart',
+        effect: () => gameVars.currentDiscards = 0
     }
 }
 

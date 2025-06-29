@@ -360,9 +360,15 @@ function scoreHand(localHand) {
 
         // remove a hand from play
         gameVars.currentHands--;
-
+        
         // global variables so jokers can access them
         playedHand = localHand;
+
+        // handle the boss's ability if it's beforeScore
+        if (gameVars.blind.boss) {
+            handleBossAbility(gameVars.blind, 'beforeScore');
+        }
+
         // get the hand's score from the score library
         currentScore = { ...handVars[getHandType(playedHand)] };
         console.log(`Level ${gameVars.handLevels[getHandType(playedHand)] ? gameVars.handLevels[getHandType(playedHand)] : 1} ${getHandType(playedHand)}`);
@@ -457,7 +463,7 @@ function scoreHand(localHand) {
             sortHand(gameVars.preferredSort);
 
             // if the beaten blind's a boss, up the ante
-            if (gameVars.blind.bossBlind) {
+            if (gameVars.blind.boss) {
                 gameVars.ante++;
             }
 
@@ -593,6 +599,21 @@ function handleJoker(joker, trigger) {
             currentScore.mult += 10;
         } else if (joker.edition === 'foil') {
             currentScore.chips += 50;
+        }
+    }
+}
+
+// handles boss ability
+function handleBossAbility(blind, trigger) {
+    if (blind.trigger === trigger) {
+        if ('effect' in blind) {
+            if ('condition' in blind) {
+                if (blind.condition()) {
+                    blind.effect();
+                }
+            } else {
+                blind.effect();
+            }
         }
     }
 }
@@ -992,15 +1013,7 @@ function runRound(blind, setScore) {
     } else {
         neededScore = setScore;
     }
-
-    // run all roundStart jokers
-    for (let joker of jokers) {
-        handleJoker(joker, 'roundStart');
-    }
-
-    console.log(`Hands left: ${gameVars.maxHands}\nDiscards left: ${gameVars.maxDiscards}`);
-    console.log(`Score to beat blind: ${neededScore}`);
-
+    
     // set variables
     gameVars.firstHand = true;
     gameVars.firstDiscard = true;
@@ -1009,6 +1022,19 @@ function runRound(blind, setScore) {
     gameVars.neededScore = neededScore;
     gameVars.gameState = 'inRound';
     gameVars.score = 0;
+    
+    // handle the boss's ability if it's at roundStart
+    if (gameVars.blind.boss) {
+        handleBossAbility(gameVars.blind, 'roundStart');
+    }
+    
+    // run all roundStart jokers
+    for (let joker of jokers) {
+        handleJoker(joker, 'roundStart');
+    }
+
+    console.log(`Hands left: ${gameVars.maxHands}\nDiscards left: ${gameVars.maxDiscards}`);
+    console.log(`Score to beat blind: ${neededScore}`);
 
     // deal a hand
     dealHand();
@@ -1036,4 +1062,4 @@ function handleCashout() {
 }
 
 updateConsumables();
-runRound('boss');
+runRound('small');
