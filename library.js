@@ -10,6 +10,7 @@ var allBlinds = {
         mult: 1.5
     },
     'boss': {
+        name: 'debugBoss',
         mult: 2,
         boss: true
     },
@@ -35,13 +36,32 @@ var allBlinds = {
     'house': {
         name: 'The House',
         mult: 2,
-        boss: true
-        // ADD ACTUAL STUFF HERE
+        boss: true,
+        trigger: 'onDraw',
+        condition: () => !('houseDraws' in gameVars) || gameVars.houseDraws < gameVars.handSize,
+        effect: () => {
+            if (!('houseDraws' in gameVars)) {
+                gameVars.houseDraws = 0;
+            }
+            gameVars.houseDraws++;
+
+            drawnCard.faceDown = true;
+        },
+        modifyTrigger: 'roundEnd',
+        modifyEffect: () => delete gameVars.houseDraws
     },
     'wall': {
         name: 'The Wall',
         mult: 4,
         boss: true
+    },
+    'wheel': {
+        name: 'The Wheel',
+        mult: 2,
+        boss: true,
+        trigger: 'onDraw',
+        condition: () => Math.floor(Math.random() * 7) < 1 + gameVars.probabilitySkew,
+        effect: () => drawnCard.faceDown = true
     },
     'arm': {
         name: 'The Arm',
@@ -54,12 +74,89 @@ var allBlinds = {
             }
         }
     },
+    'club': {
+        name: 'The Club',
+        mult: 2,
+        boss: true,
+        trigger: 'onDraw',
+        condition: () => drawnCard.suit === 'clubs',
+        effect: () => drawnCard.debuffed = true
+    },
+    'psychic': {
+        name: 'The Psychic',
+        mult: 2,
+        boss: true,
+        trigger: 'beforeScore',
+        condition: () => playedHand.length < 5,
+        effect: () => gameVars.notAllowed = true
+    },
+    'goad': {
+        name: 'The Goad',
+        mult: 2,
+        boss: true,
+        trigger: 'onDraw',
+        condition: () => drawnCard.suit === 'spades',
+        effect: () => drawnCard.debuffed = true
+    },
     'water': {
         name: 'The Water',
         mult: 2,
         boss: true,
         trigger: 'roundStart',
         effect: () => gameVars.currentDiscards = 0
+    },
+    'window': {
+        name: 'The Window',
+        mult: 2,
+        boss: true,
+        trigger: 'onDraw',
+        condition: () => drawnCard.suit === 'diamonds',
+        effect: () => drawnCard.debuffed = true
+    },
+    'manacle': {
+        name: 'The Manacle',
+        mult: 2,
+        boss: true,
+        trigger: 'roundStart',
+        effect: () => gameVars.handSize--,
+        modifyTrigger: 'roundEnd',
+        modifyEffect: () => gameVars.handSize++
+    },
+    'mouth': {
+        name: 'The Mouth',
+        mult: 2,
+        boss: true,
+        trigger: 'beforeScore',
+        condition: () => {
+            if (!('mouthHand' in gameVars)) {
+                gameVars.mouthHand = getHandType(playedHand);
+            }
+
+            return getHandType(playedHand) !== gameVars.mouthHand;
+        },
+        effect: () => gameVars.notAllowed = true,
+        modifyTrigger: 'roundEnd',
+        modifyEffect: () => delete gameVars.mouthHand
+    },
+    'needle': {
+        name: 'The Needle',
+        mult: 1,
+        boss: true,
+        trigger: 'roundStart',
+        effect: () => gameVars.currentHands = 1
+    },
+    'head': {
+        name: 'The Head',
+        mult: 2,
+        boss: true,
+        trigger: 'onDraw',
+        condition: () => drawnCard.suit === 'hearts',
+        effect: () => drawnCard.debuffed = true
+    },
+    'vessel': {
+        name: 'Violet Vessel',
+        mult: 6,
+        boss: true
     }
 }
 
@@ -830,6 +927,11 @@ var spectralCards = {
     Current Joker - MY MOM (HEYO!!! (GOTTEM!!1!))
 */
 var allJokers = {
+    'debugWin': {
+        name: 'debugWin',
+        trigger: 'afterScore',
+        effect: () => currentScore.chips = gameVars.neededScore
+    },
     'joker': {
         name: 'Joker',
         rarity: 'common',
@@ -2194,7 +2296,7 @@ var allJokers = {
         name: 'Oops! All 6s',
         rarity: 'uncommon',
         trigger: 'beforeScore',
-        effect: () => gameVars.probabilitySkew = jokers.filter(j => j === allJokers.oopsAllSixes).length
+        effect: () => gameVars.probabilitySkew = jokers.filter(j => j.name === 'Oops! All 6s').length
     },
     'theIdol': {
         name: 'The Idol',
@@ -2304,7 +2406,7 @@ var allJokers = {
         modifyEffects: [() => gameVars.handSize -= 2, () => gameVars.handSize += 2]
     },
     'brainstorm': {
-        name: 'Blueprint',
+        name: 'Brainstorm',
         rarity: 'rare',
         modifyTrigger: 'copyAbility',
         modifyEffect: function () {
@@ -2381,7 +2483,7 @@ let allEnhancements = ['bonus', 'mult', 'wild', 'glass', 'steel', 'stone', 'gold
 let allSeals = ['red', 'blue', 'gold', 'purple'];
 let allEditions = ['foil', 'holographic', 'polychrome'];
 // card constructor function
-function Card(rank, suit, enhancement, seal, edition) {
+function Card(rank, suit, enhancement, seal, edition, debuffed, faceDown) {
     if (rank === 'rand') {
         this.rank = Math.floor(Math.random() * 13) + 2;
     } else if (rank === 'ace') {
@@ -2424,6 +2526,14 @@ function Card(rank, suit, enhancement, seal, edition) {
         } else {
             this.edition = edition;
         }
+    }
+
+    if (debuffed) {
+        this.debuffed = true;
+    }
+
+    if (faceDown) {
+        this.faceDown = true;
     }
 
     this.id = cardsSpawned;
